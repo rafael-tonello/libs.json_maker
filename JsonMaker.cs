@@ -30,10 +30,13 @@ namespace Libs
                 this.childs.Clear();
 
             }
-            public string ToJson()
+            public string ToJson(bool exportSelfName = true)
             {
-
+                
                 string namePrefix = this.name != "" ? "\"" + this.name + "\":" : "";
+
+                if (!exportSelfName)
+                    namePrefix = "";
                 //se for um objeto simples, retorna apenas o valor string
                 if (this.childs.Count == 0)
                 {
@@ -175,7 +178,7 @@ namespace Libs
                     if (value[0] == '\"')
                         value = value.Substring(1, value.Length - 2);
                 }
-                value = value.Replace("\"", "\\\"");
+                //value = value.Replace("\"", "\\\"");
             }
             //quebra o nome em um array
             objectName = objectName.Replace("[", ".[");
@@ -258,10 +261,63 @@ namespace Libs
             return root.ToJson();
         }
 
-        public bool contains(string name)
+        public bool contains(string objectName)
         {
             return false;
 
+        }
+
+        public string get(string objectName)
+        {
+            //quebra o nome em um array
+            objectName = objectName.Replace("[", ".[");
+            List<string> parts = objectName.Split('.').ToList();
+            ObjectItem currentParent = this.root;
+
+            //percore os nomes
+            for (int cont = 0; cont < parts.Count; cont++)
+            {
+                string currentName = parts[cont];
+
+                //verifica se o nome atual está na lista atual
+                //verifica se se refere a um array
+                ObjectItem parent = null;
+                if (currentName.Contains('['))
+                {
+
+                    int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
+
+                    if (indice < currentParent.childs.Count)
+                        parent = currentParent.childs[indice];
+                    else
+                        break;
+                    
+                }
+                else
+                {
+                    parent = currentParent.childs.Find(delegate (ObjectItem att) { return att.name == currentName; });
+
+                    //se o elemento não estiver na lista atual, adiciona um filho a ela
+                    if (parent == null)
+                        break;
+
+                    //verifica se já está no final dos nomes
+                }
+                if (cont == parts.Count - 1)
+                {
+                    
+                    string ret = parent.ToJson(false);
+                    //remove aspasta do inicio e do final
+                    if (ret[0] == '\"')
+                        ret = ret.Substring(1, ret.Length - 2);
+
+                    return ret;
+                }
+
+                //define a lista de filhos di elemento encontrado como sendo a lista atual.
+                currentParent = parent;
+            }
+            return "";
         }
 
 
@@ -313,7 +369,7 @@ namespace Libs
             else if (value[0] == '{')
                 childs = getJsonFields(value);
             else
-                childs.Add(value.Replace("\"", ""));
+                childs.Add(value);
 
 
 
@@ -340,8 +396,10 @@ namespace Libs
                 //if (!isAJson(toInsert))
                 if ((att[0] != '{') && (att[0] != '['))
                 {
-
-                    toInsert = toInsert.Replace("\\\"", "\"");
+                    if ((toInsert.Length > 0) && (toInsert[0] == '\"'))
+                        toInsert = toInsert.Substring(1);
+                    if ((toInsert.Length > 0) && (toInsert[toInsert.Length - 1] == '\"'))
+                        toInsert = toInsert.Substring(0, toInsert.Length - 1);
                 }
 
                 //adiciona o objeto à lista
