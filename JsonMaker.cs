@@ -39,8 +39,10 @@ namespace Libs
                 {
                     string correctValue = value;
                     //veririca se não é numero (inteiro ou float
-                    if (!(containsOnly(correctValue, "0123456789.")) && //numero
-                        !(containsOnly(correctValue, "0123456789-.")))//float
+                    if
+                        ((!(containsOnly(correctValue, "0123456789.")) && //numero
+                        !(containsOnly(correctValue, "0123456789-."))) ||
+                        value == "")//float
                     {
                         //verifica se é um "true"
                         if ((correctValue.ToLower() == "true") || (correctValue.ToLower() == "false"))
@@ -98,7 +100,7 @@ namespace Libs
 
 
         //return the nextChildName
-        private string _addArray(string objectName)
+        private string _getNewArrayPos(string objectName)
         {
             List<string> parts = objectName.Replace("[", ".[").Split('.').ToList();
             ObjectItem currentParent = this.root;
@@ -280,7 +282,7 @@ namespace Libs
                 int index = 0;
                 while (json[index] != ':')
                 {
-                    if ("\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnop.qrstuvxywz0123456789".Contains(json[index]))
+                    if ("\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnop.qrstuvxywz0123456789[]".Contains(json[index]))
                         name += json[index];
                     else
                     {
@@ -330,7 +332,7 @@ namespace Libs
             {
 
                 if (isArray)
-                    tempName = _addArray(name);
+                    tempName = _getNewArrayPos(name);
 
                 //se for uma string, remove as aspas do inicio e do final
                 //
