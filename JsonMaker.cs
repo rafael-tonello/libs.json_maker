@@ -13,7 +13,7 @@ namespace Libs
             public string name;
             public string value;
             public bool isArray = false;
-            ObjectItem parent;
+            public ObjectItem parent;
             public List<ObjectItem> childs = new List<ObjectItem>();
 
             public ObjectItem(ObjectItem pParent)
@@ -90,17 +90,76 @@ namespace Libs
             }
         }
 
-        private ObjectItem root = new ObjectItem(null) { name = ""};
+        private ObjectItem root = new ObjectItem(null) { name = "" };
         public void clear()
         {
             root.clear();
         }
 
-        private void _add(string objectName, string value, bool replaceSpecialChars = true)
+
+        //return the nextChildName
+        private string _addArray(string objectName)
+        {
+            List<string> parts = objectName.Replace("[", ".[").Split('.').ToList();
+            ObjectItem currentParent = this.root;
+
+            string retname = "";
+            //percore os nomes
+            for (int cont = 0; cont < parts.Count; cont++)
+            {
+                string currentName = parts[cont];
+                ObjectItem parent = null;
+                if (currentName.Contains('['))
+                {
+
+                    int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
+
+                    //caso não existam filhos até o indice especificado, cria estes filhos
+                    for (int cont2 = currentParent.childs.Count; cont2 <= indice; cont2++)
+                    {
+                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "" });
+                    }
+
+                    parent = currentParent.childs[indice];
+
+                    currentParent.isArray = true;
+                }
+                else
+                {
+
+                    parent = currentParent.childs.Find(delegate (ObjectItem att) { return att.name == currentName; });
+
+                    //se o elemento não estiver na lista atual, adiciona um filho a ela
+                    if (parent == null)
+                    {
+                        parent = new ObjectItem(currentParent)
+                        {
+                            name = currentName,
+                            isArray = false
+                        };
+                        currentParent.childs.Add(parent);
+                    }
+                }
+
+                //verifica se já está no final dos nomes
+                if (cont == parts.Count - 1)
+                {
+                    parent.isArray = true;
+                    return objectName + "[" + (parent.childs.Count).ToString() + "]";
+                }
+
+                currentParent = parent;
+            }
+            return "";
+        }
+
+
+        private void _set(string objectName, string value, bool replaceSpecialChars = true)
         {
 
 
             //if (value.Contains('{') || value.Contains('[') || value.Contains(":{") || value.Contains(":[") || value.Contains(":\""))
+
             if (isAJson(value))
             {
                 this.parseJson(value, objectName);
@@ -109,6 +168,11 @@ namespace Libs
 
             if (replaceSpecialChars)
             {
+                if (!isAJson(value))
+                {
+                    if (value[0] == '\"')
+                        value = value.Substring(1, value.Length - 2);
+                }
                 value = value.Replace("\"", "\\\"");
             }
             //quebra o nome em um array
@@ -121,34 +185,21 @@ namespace Libs
             {
                 string currentName = parts[cont];
 
-                
-                bool isArray = false;
                 //verifica se o nome atual está na lista atual
                 //verifica se se refere a um array
                 ObjectItem parent = null;
                 if (currentName.Contains('['))
                 {
-                    isArray = true;
 
-                    if (currentName == "[]")
+                    int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
+
+                    //caso não existam filhos até o indice especificado, cria estes filhos
+                    for (int cont2 = currentParent.childs.Count; cont2 <= indice; cont2++)
                     {
-                        //cria um novo elemento na lista pai
-                        parent = new ObjectItem(currentParent)
-                        {
-                            name = currentName,
-                            isArray = false
-
-                        };
-
-                        //
-                        currentParent.childs.Add(parent);
-
+                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "" });
                     }
-                    else
-                    {
-                        int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
-                        parent = currentParent.childs[indice];
-                    }
+
+                    parent = currentParent.childs[indice];
 
                     currentParent.isArray = true;
                 }
@@ -169,15 +220,12 @@ namespace Libs
                         //
                         currentParent.childs.Add(parent);
                     }
+
+                    //verifica se já está no final dos nomes
                 }
-
-                //verifica se já está no final dos nomes
                 if (cont == parts.Count - 1)
-                {
-                    
-                    //altera o valor do parent
+                {    
                     parent.value = value;
-
                 }
 
 
@@ -187,21 +235,24 @@ namespace Libs
             }
         }
 
-        public void add(string objectName, string value, bool replaceSpecialChars = true)
+        public void add(string objectName, string value)
         {
-            _add(objectName, value, replaceSpecialChars);
+            if (objectName != "")
+                objectName = objectName + ":";
+            this.parseJson(objectName+ value);
 
         }
 
         public void add(string objectName, JsonMaker toImport)
         {
-            this._add(objectName, toImport.ToJson(), false);
+            if (objectName != "")
+                objectName = objectName + ":";
+            this.parseJson(objectName +toImport.ToJson());
 
         }
 
         public string ToJson()
         {
-
             return root.ToJson();
         }
 
@@ -229,7 +280,7 @@ namespace Libs
                 int index = 0;
                 while (json[index] != ':')
                 {
-                    if ("\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnopqrstuvxywz0123456789".Contains(json[index]))
+                    if ("\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnop.qrstuvxywz0123456789".Contains(json[index]))
                         name += json[index];
                     else
                     {
@@ -268,24 +319,31 @@ namespace Libs
             if ((parentName != "") && (name != ""))
                 name = '.' + name;
 
-            if (isArray)
-                name += "[]";
 
             name = parentName + name;
+
+            //se for um array, cria um novo array
+
+
+            var tempName = name;
             foreach (var att in childs)
             {
+
+                if (isArray)
+                    tempName = _addArray(name);
+
                 //se for uma string, remove as aspas do inicio e do final
                 //
                 var toInsert = att;
                 //if (!isAJson(toInsert))
                 if ((att[0] != '{') && (att[0] != '['))
                 {
-                    
+
                     toInsert = toInsert.Replace("\\\"", "\"");
                 }
 
                 //adiciona o objeto à lista
-                this._add(name, toInsert);
+                this._set(tempName, toInsert);
             }
         }
 
