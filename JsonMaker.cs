@@ -175,7 +175,7 @@ namespace Libs
             {
                 if (!isAJson(value))
                 {
-                    if (value[0] == '\"')
+                    if ((value.Length > 0) && (value[0] == '\"'))
                         value = value.Substring(1, value.Length - 2);
                 }
                 //value = value.Replace("\"", "\\\"");
@@ -320,6 +320,73 @@ namespace Libs
             return "";
         }
 
+        private List<string> getObjectsNames(ObjectItem currentItem = null)
+        {
+            List<string> retorno = new List<string>();
+
+            if (currentItem == null)
+                currentItem = this.root;
+
+            
+
+            if (currentItem.childs.Count == 0)
+            {
+                retorno.Add(currentItem.name);
+            }
+            else
+            {
+                string parentName = currentItem.name;
+                List<string> childsNames;
+                for (int cont = 0; cont < currentItem.childs.Count; cont++)
+                {
+                    if (currentItem.isArray)
+                        currentItem.childs[cont].name = "";
+
+                    childsNames = getObjectsNames(currentItem.childs[cont]);
+
+                    //adiciona os filhos ao resultado
+                    //verifica se o nome atual atende ao filtro
+                    foreach (var att in childsNames)
+                    {
+                        string childNameAtt = currentItem.name;
+                        if (currentItem.isArray)
+                            childNameAtt = currentItem.name + "[" + cont + "]";
+
+                        if ((att != "") && (childNameAtt != "") && (att[0] != '['))
+                            childNameAtt += ".";
+                        
+                        childNameAtt += att;
+                        retorno.Add(childNameAtt);
+                    }
+                }
+
+            }
+
+
+
+            //if (value.Contains('{') || value.Contains('[') || value.Contains(":{") || value.Contains(":[") || value.Contains(":\""))
+            return retorno;
+
+        }
+
+        public List<string> getObjectsNames(string objectName = "")
+        {
+            
+            List<string> retorno = this.getObjectsNames(this.root);
+
+            //remove os items que não atendem ao filtro
+            if (objectName != "")
+            {
+                for (int cont = retorno.Count - 1; cont >= 0; cont--)
+                {
+                    if (!(retorno[cont].IndexOf(objectName) == 0))
+                        retorno.RemoveAt(cont);
+                }
+            }
+
+            return retorno;
+            
+        }
 
         #region json parser
 
@@ -482,7 +549,7 @@ namespace Libs
         {
             bool quotes = false;
 
-            if ((json[0] != '{') && (json[0] != '[') && (json[0] != '\"'))
+            if ((json.Length > 0) &&(json[0] != '{') && (json[0] != '[') && (json[0] != '\"'))
                 quotes = true;
 
             foreach (char att in json)
