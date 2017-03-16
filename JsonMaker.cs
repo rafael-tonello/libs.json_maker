@@ -32,7 +32,7 @@ namespace Libs
             }
             public string ToJson(bool exportSelfName = true)
             {
-                
+
                 string namePrefix = this.name != "" ? "\"" + this.name + "\":" : "";
 
                 if (!exportSelfName)
@@ -47,8 +47,8 @@ namespace Libs
                         !(containsOnly(correctValue, "0123456789-."))) ||
                         value == "")//float
                     {
-                        //verifica se é um "true"
-                        if ((correctValue.ToLower() == "true") || (correctValue.ToLower() == "false"))
+                        //verifica se é um "true", "false", ou "null"
+                        if ((correctValue.ToLower() == "true") || (correctValue.ToLower() == "false") || (correctValue.ToLower() == "null"))
                             correctValue = correctValue.ToLower();
                         else //adiciona aspas
                             correctValue = '\"' + correctValue + '\"';
@@ -122,7 +122,7 @@ namespace Libs
                     //caso não existam filhos até o indice especificado, cria estes filhos
                     for (int cont2 = currentParent.childs.Count; cont2 <= indice; cont2++)
                     {
-                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "" });
+                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "null" });
                     }
 
                     parent = currentParent.childs[indice];
@@ -201,7 +201,7 @@ namespace Libs
                     //caso não existam filhos até o indice especificado, cria estes filhos
                     for (int cont2 = currentParent.childs.Count; cont2 <= indice; cont2++)
                     {
-                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "" });
+                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "null" });
                     }
 
                     parent = currentParent.childs[indice];
@@ -229,7 +229,7 @@ namespace Libs
                     //verifica se já está no final dos nomes
                 }
                 if (cont == parts.Count - 1)
-                {    
+                {
                     parent.value = value;
                 }
 
@@ -244,7 +244,7 @@ namespace Libs
         {
             if (objectName != "")
                 objectName = objectName + ":";
-            this.parseJson(objectName+ value);
+            this.parseJson(objectName + value);
 
         }
 
@@ -252,7 +252,7 @@ namespace Libs
         {
             if (objectName != "")
                 objectName = objectName + ":";
-            this.parseJson(objectName +toImport.ToJson());
+            this.parseJson(objectName + toImport.ToJson());
 
         }
 
@@ -291,7 +291,7 @@ namespace Libs
                         parent = currentParent.childs[indice];
                     else
                         break;
-                    
+
                 }
                 else
                 {
@@ -305,7 +305,7 @@ namespace Libs
                 }
                 if (cont == parts.Count - 1)
                 {
-                    
+
                     string ret = parent.ToJson(false);
                     //remove aspasta do inicio e do final
                     if (ret[0] == '\"')
@@ -317,7 +317,7 @@ namespace Libs
                 //define a lista de filhos di elemento encontrado como sendo a lista atual.
                 currentParent = parent;
             }
-            return "";
+            return "null";
         }
 
         private List<string> getObjectsNames(ObjectItem currentItem = null)
@@ -327,7 +327,7 @@ namespace Libs
             if (currentItem == null)
                 currentItem = this.root;
 
-            
+
 
             if (currentItem.childs.Count == 0)
             {
@@ -354,7 +354,7 @@ namespace Libs
 
                         if ((att != "") && (childNameAtt != "") && (att[0] != '['))
                             childNameAtt += ".";
-                        
+
                         childNameAtt += att;
                         retorno.Add(childNameAtt);
                     }
@@ -371,7 +371,7 @@ namespace Libs
 
         public List<string> getObjectsNames(string objectName = "")
         {
-            
+
             List<string> retorno = this.getObjectsNames(this.root);
 
             //remove os items que não atendem ao filtro
@@ -385,7 +385,7 @@ namespace Libs
             }
 
             return retorno;
-            
+
         }
 
         #region json parser
@@ -549,7 +549,7 @@ namespace Libs
         {
             bool quotes = false;
 
-            if ((json.Length > 0) &&(json[0] != '{') && (json[0] != '[') && (json[0] != '\"'))
+            if ((json.Length > 0) && (json[0] != '{') && (json[0] != '[') && (json[0] != '\"'))
                 quotes = true;
 
             foreach (char att in json)
@@ -573,5 +573,47 @@ namespace Libs
 
         #endregion
 
+
+        public string getString(string name)
+        {
+            return this.get(name);
+        }
+
+        public int getInt(string name)
+        {
+            return int.Parse(getOnly(this.get(name), "0123456789-"));
+        }
+
+        public Int64 getInt64(string name)
+        {
+            return Int64.Parse(getOnly(this.get(name), "0123456789-"));
+        }
+
+        public bool getBoolean(string name)
+        {
+            if (this.get(name).ToLower() == "true")
+                return true;
+            else
+                return false;
+        }
+
+        public DateTime getDateTime(string name)
+        {
+            return DateTime.Parse(getOnly(this.get(name), "0123456789/: TU"));
+        }
+
+        public double getDouble(string name)
+        {
+            return double.Parse(getOnly(this.get(name).Replace('.', ','), "0123456789-,"));
+        }
+
+        private string getOnly(string text, string chars)
+        {
+            StringBuilder ret = new StringBuilder();
+            foreach (var att in text)
+                if (chars.Contains(att))
+                    ret.Append(att);
+            return ret.ToString();
+        }
     }
 }
