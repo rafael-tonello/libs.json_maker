@@ -263,8 +263,46 @@ namespace Libs
 
         public bool contains(string objectName)
         {
-            return false;
+            //quebra o nome em um array
+            objectName = objectName.Replace("[", ".[");
+            List<string> parts = objectName.Split('.').ToList();
+            ObjectItem currentParent = this.root;
 
+            //percore os nomes
+            for (int cont = 0; cont < parts.Count; cont++)
+            {
+                string currentName = parts[cont];
+
+                //verifica se o nome atual está na lista atual
+                //verifica se se refere a um array
+                ObjectItem parent = null;
+                if (currentName.Contains('['))
+                {
+
+                    int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
+
+                    if (indice < currentParent.childs.Count)
+                        parent = currentParent.childs[indice];
+                    else
+                        break;
+
+                }
+                else
+                {
+                    parent = currentParent.childs.Find(delegate (ObjectItem att) { return att.name == currentName; });
+
+                    //se o elemento não estiver na lista atual, adiciona um filho a ela
+                    if (parent == null)
+                        return false;
+
+                    //verifica se já está no final dos nomes
+                }
+                if (cont == parts.Count - 1)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public string get(string objectName)
