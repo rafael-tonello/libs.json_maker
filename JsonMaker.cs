@@ -8,6 +8,10 @@ namespace Libs
 {
     class JsonMaker
     {
+		/*
+			Autor: Rafal Tonello
+			email: tonello.rafinha@gmail.com
+		*/
         class ObjectItem
         {
             public string name;
