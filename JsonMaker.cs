@@ -4,164 +4,102 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Libs
+namespace JsonMaker
 {
     class JsonMaker
     {
-		/*
-			Autor: Rafal Tonello
-			email: tonello.rafinha@gmail.com
-		*/
-        class ObjectItem
-        {
-            public string name;
-            public string value;
-            public bool isArray = false;
-            public ObjectItem parent;
-            public List<ObjectItem> childs = new List<ObjectItem>();
 
-            public ObjectItem(ObjectItem pParent)
-            {
-                this.parent = pParent;
-            }
-
-            public void clear()
-            {
-                this.name = "";
-                this.value = "";
-                foreach (var att in this.childs)
-                    att.clear();
-                this.childs.Clear();
-
-            }
-            public string ToJson(bool exportSelfName = true)
-            {
-
-                string namePrefix = this.name != "" ? "\"" + this.name + "\":" : "";
-
-                if (!exportSelfName)
-                    namePrefix = "";
-                //se for um objeto simples, retorna apenas o valor string
-                if (this.childs.Count == 0)
-                {
-                    string correctValue = value;
-                    //veririca se não é numero (inteiro ou float
-                    if
-                        ((!(containsOnly(correctValue, "0123456789.")) && //numero
-                        !(containsOnly(correctValue, "0123456789-."))) ||
-                        value == "")//float
-                    {
-                        //verifica se é um "true", "false", ou "null"
-                        if ((correctValue.ToLower() == "true") || (correctValue.ToLower() == "false") || (correctValue.ToLower() == "null"))
-                            correctValue = correctValue.ToLower();
-                        else //adiciona aspas
-                            correctValue = '\"' + correctValue + '\"';
-
-
-                    }
-
-                    return namePrefix + correctValue;
-                }
-                else
-                {
-                    StringBuilder ret = new StringBuilder();
-                    ret.Append(namePrefix);
-                    ret.Append(this.isArray ? "[" : "{");
-
-                    //percore os filhos
-                    for (int cont = 0; cont < this.childs.Count; cont++)
-                    {
-                        //ser for um array, garante que o filho não tenha nome
-                        if (isArray)
-                            this.childs[cont].name = "";
-                        //adiciona o filho à exportação
-                        ret.Append(childs[cont].ToJson());
-
-                        //se não for o último elemento, adiciona uma virgula
-                        if (cont < this.childs.Count - 1)
-                            ret.Append(',');
-                    }
-                    ret.Append(this.isArray ? "]" : "}");
-                    return ret.ToString();
-                }
-            }
-
-            private bool containsOnly(string value, string chars)
-            {
-                int cont = 0;
-                while (cont < value.Length)
-                {
-                    if (!chars.Contains(value[cont]))
-                        return false;
-                    cont++;
-                }
-                return true;
-            }
-        }
-
-        private ObjectItem root = new ObjectItem(null) { name = "" };
+        private JSONObject root = new JSONObject(null);
         public void clear()
         {
             root.clear();
         }
 
 
-        //return the nextChildName
-        private string _getNewArrayPos(string objectName)
+        private JSONObject find(string objectName, bool autoCreateTree)
         {
-            List<string> parts = objectName.Replace("[", ".[").Split('.').ToList();
-            ObjectItem currentParent = this.root;
+            //quebra o nome em um array
+            objectName = objectName.Replace("[", ".[");
+            List<string> parts = objectName.Split('.').ToList();
+            JSONObject currentParent = this.root;
 
-            string retname = "";
             //percore os nomes
             for (int cont = 0; cont < parts.Count; cont++)
             {
                 string currentName = parts[cont];
-                ObjectItem parent = null;
+
+                //verifica se o nome atual está na lista atual
+                //verifica se se refere a um array
+                JSONObject parent = null;
                 if (currentName.Contains('['))
                 {
 
                     int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
 
-                    //caso não existam filhos até o indice especificado, cria estes filhos
-                    for (int cont2 = currentParent.childs.Count; cont2 <= indice; cont2++)
+                    //força o pai a ser um array
+                    if (!(currentParent is JSONArray))
                     {
-                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "null" });
+                        if (autoCreateTree)
+                            currentParent.parent.replace(currentParent, new JSONArray(currentParent.parent));
+                        else
+                            return null;
                     }
 
-                    parent = currentParent.childs[indice];
+                    parent = ((JSONArray)(currentParent)).get(indice);
 
-                    currentParent.isArray = true;
+                    if (parent == null)
+                    {
+                        if (autoCreateTree)
+                        {
+                            parent = new JSONSingleValueObject(currentParent);
+                            ((JSONArray)(currentParent)).set(parent);
+                        }
+                        else
+                            return null;
+                    }
+
                 }
                 else
                 {
 
-                    parent = currentParent.childs.Find(delegate (ObjectItem att) { return att.name == currentName; });
+                    //força o pai a ser um JSONObject
+                    if ((currentParent is JSONArray) || (currentParent is JSONSingleValueObject))
+                    {
+                        if (autoCreateTree)
+                        {
+                            JSONObject toReplace = new JSONObject(currentParent.parent);
+                            currentParent.parent.replace(currentParent, toReplace);
+                            currentParent = toReplace;
+                        }
 
+                        else
+                            return null;
+                    }
+
+                    parent = ((JSONObject)(currentParent)).get(currentName);
                     //se o elemento não estiver na lista atual, adiciona um filho a ela
                     if (parent == null)
                     {
-                        parent = new ObjectItem(currentParent)
+                        if (autoCreateTree)
                         {
-                            name = currentName,
-                            isArray = false
-                        };
-                        currentParent.childs.Add(parent);
+                            parent = new JSONSingleValueObject(currentParent);
+                            ((JSONObject)(currentParent)).set(currentName, parent);
+                        }
+                        else
+                            return null;
                     }
-                }
 
+                }
+                //define a lista de filhos di elemento encontrado como sendo a lista atual.
                 //verifica se já está no final dos nomes
                 if (cont == parts.Count - 1)
                 {
-                    parent.isArray = true;
-                    return objectName + "[" + (parent.childs.Count).ToString() + "]";
+                    return parent;
                 }
-
                 currentParent = parent;
             }
-            return "";
+            return null;
         }
-
 
         private void _set(string objectName, string value, bool replaceSpecialChars = true)
         {
@@ -184,64 +122,15 @@ namespace Libs
                 }
                 //value = value.Replace("\"", "\\\"");
             }
-            //quebra o nome em um array
-            objectName = objectName.Replace("[", ".[");
-            List<string> parts = objectName.Split('.').ToList();
-            ObjectItem currentParent = this.root;
-
-            //percore os nomes
-            for (int cont = 0; cont < parts.Count; cont++)
+            JSONObject temp = this.find(objectName, true);
+            if (!(temp is JSONSingleValueObject))
             {
-                string currentName = parts[cont];
-
-                //verifica se o nome atual está na lista atual
-                //verifica se se refere a um array
-                ObjectItem parent = null;
-                if (currentName.Contains('['))
-                {
-
-                    int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
-
-                    //caso não existam filhos até o indice especificado, cria estes filhos
-                    for (int cont2 = currentParent.childs.Count; cont2 <= indice; cont2++)
-                    {
-                        currentParent.childs.Add(new ObjectItem(currentParent) { name = "", value = "null" });
-                    }
-
-                    parent = currentParent.childs[indice];
-
-                    currentParent.isArray = true;
-                }
-                else
-                {
-                    parent = currentParent.childs.Find(delegate (ObjectItem att) { return att.name == currentName; });
-
-                    //se o elemento não estiver na lista atual, adiciona um filho a ela
-                    if (parent == null)
-                    {
-                        parent = new ObjectItem(currentParent)
-                        {
-                            name = currentName,
-                            isArray = false
-
-                        };
-
-                        //
-                        currentParent.childs.Add(parent);
-                    }
-
-                    //verifica se já está no final dos nomes
-                }
-                if (cont == parts.Count - 1)
-                {
-                    parent.value = value;
-                }
-
-
-
-                //define a lista de filhos di elemento encontrado como sendo a lista atual.
-                currentParent = parent;
+                JSONSingleValueObject temp2 = new JSONSingleValueObject(temp.parent);
+                temp.parent.replace(temp, temp2);
+                temp = temp2;
             }
+            ((JSONSingleValueObject)(temp)).set(value);
+            
         }
 
         public void add(string objectName, string value)
@@ -267,145 +156,53 @@ namespace Libs
 
         public bool contains(string objectName)
         {
-            //quebra o nome em um array
-            objectName = objectName.Replace("[", ".[");
-            List<string> parts = objectName.Split('.').ToList();
-            ObjectItem currentParent = this.root;
-
-            //percore os nomes
-            for (int cont = 0; cont < parts.Count; cont++)
-            {
-                string currentName = parts[cont];
-
-                //verifica se o nome atual está na lista atual
-                //verifica se se refere a um array
-                ObjectItem parent = null;
-                if (currentName.Contains('['))
-                {
-
-                    int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
-
-                    if (indice < currentParent.childs.Count)
-                        parent = currentParent.childs[indice];
-                    else
-                        break;
-
-                }
-                else
-                {
-                    parent = currentParent.childs.Find(delegate (ObjectItem att) { return att.name == currentName; });
-
-                    //se o elemento não estiver na lista atual, adiciona um filho a ela
-                    if (parent == null)
-                        return false;
-
-                    //verifica se já está no final dos nomes
-                }
-                if (cont == parts.Count - 1)
-                {
-                    return true;
-                }
-            }
-            return false;
+            return this.find(objectName, false) != null;
         }
 
         public string get(string objectName)
         {
-            //quebra o nome em um array
-            objectName = objectName.Replace("[", ".[");
-            List<string> parts = objectName.Split('.').ToList();
-            ObjectItem currentParent = this.root;
+            JSONObject temp = this.find(objectName, false);
+            if (temp != null)
+                return temp.ToJson();
+            else
+                return "null";
 
-            //percore os nomes
-            for (int cont = 0; cont < parts.Count; cont++)
-            {
-                string currentName = parts[cont];
-
-                //verifica se o nome atual está na lista atual
-                //verifica se se refere a um array
-                ObjectItem parent = null;
-                if (currentName.Contains('['))
-                {
-
-                    int indice = int.Parse(currentName.Substring(1, currentName.Length - 2));
-
-                    if (indice < currentParent.childs.Count)
-                        parent = currentParent.childs[indice];
-                    else
-                        break;
-
-                }
-                else
-                {
-                    parent = currentParent.childs.Find(delegate (ObjectItem att) { return att.name == currentName; });
-
-                    //se o elemento não estiver na lista atual, adiciona um filho a ela
-                    if (parent == null)
-                        break;
-
-                    //verifica se já está no final dos nomes
-                }
-                if (cont == parts.Count - 1)
-                {
-
-                    string ret = parent.ToJson(false);
-                    //remove aspasta do inicio e do final
-                    if (ret[0] == '\"')
-                        ret = ret.Substring(1, ret.Length - 2);
-
-                    return ret;
-                }
-
-                //define a lista de filhos di elemento encontrado como sendo a lista atual.
-                currentParent = parent;
-            }
-            return "null";
         }
 
-        private List<string> getObjectsNames(ObjectItem currentItem = null)
+        private List<string> getObjectsNames(JSONObject currentItem = null)
         {
             List<string> retorno = new List<string>();
 
             if (currentItem == null)
                 currentItem = this.root;
 
+            
+            string parentName = "";
 
+            List<string> childsNames;
 
-            if (currentItem.childs.Count == 0)
+            for (int cont = 0; cont < currentItem.__getChilds().Count; cont++)
             {
-                retorno.Add(currentItem.name);
-            }
-            else
-            {
-                string parentName = currentItem.name;
-                List<string> childsNames;
-                for (int cont = 0; cont < currentItem.childs.Count; cont++)
+
+                
+                childsNames = getObjectsNames(currentItem.__getChilds().ElementAt(cont).Value);
+
+                //adiciona os filhos ao resultado
+                //verifica se o nome atual atende ao filtro
+                foreach (var att in childsNames)
                 {
-                    if (currentItem.isArray)
-                        currentItem.childs[cont].name = "";
+                    if (currentItem is JSONArray)
+                        parentName += "[" + cont + "]";
+                    else
+                        parentName += currentItem.__getChilds().ElementAt(cont).Key;
 
-                    childsNames = getObjectsNames(currentItem.childs[cont]);
-
-                    //adiciona os filhos ao resultado
-                    //verifica se o nome atual atende ao filtro
-                    foreach (var att in childsNames)
-                    {
-                        string childNameAtt = currentItem.name;
-                        if (currentItem.isArray)
-                            childNameAtt = currentItem.name + "[" + cont + "]";
-
-                        if ((att != "") && (childNameAtt != "") && (att[0] != '['))
-                            childNameAtt += ".";
-
-                        childNameAtt += att;
-                        retorno.Add(childNameAtt);
-                    }
+                    string nAtt = att;
+                    if (nAtt != "")
+                        nAtt = parentName + '.' + nAtt;
+                    
+                    retorno.Add(nAtt);
                 }
-
             }
-
-
-
             //if (value.Contains('{') || value.Contains('[') || value.Contains(":{") || value.Contains(":[") || value.Contains(":\""))
             return retorno;
 
@@ -469,11 +266,9 @@ namespace Libs
 
             //se tiver um '{' ou um '[', então processa independentemente cacda um de seus valroes
             List<string> childs = new List<string>();
-            bool isArray = false;
             if (value[0] == '[')
             {
                 childs = getJsonFields(value);
-                isArray = true;
             }
             else if (value[0] == '{')
                 childs = getJsonFields(value);
@@ -495,10 +290,6 @@ namespace Libs
             var tempName = name;
             foreach (var att in childs)
             {
-
-                if (isArray)
-                    tempName = _getNewArrayPos(name);
-
                 //se for uma string, remove as aspas do inicio e do final
                 //
                 var toInsert = att;
@@ -596,7 +387,7 @@ namespace Libs
 
             foreach (char att in json)
             {
-                if (att == '\"')
+                if ((att == '\"') || (att == '\''))
                     quotes = !quotes;
 
                 if (!quotes)
