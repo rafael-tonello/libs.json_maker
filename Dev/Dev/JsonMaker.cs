@@ -39,7 +39,7 @@ namespace JsonMaker
             }
 
             childOnParent = currentParent.__getChilds()[currentName];
-            
+
 
             if (childsNames == "")
             {
@@ -62,16 +62,16 @@ namespace JsonMaker
 
             JSONObject temp = this.find(objectName, true, this.root);
 
-            if (value[0] == '\"')
-                value = value.Substring(1, value.Length - 2);
+            /*if (value[0] == '\"')
+                value = value.Substring(1, value.Length - 2);*/
 
-            value = value.Replace("\"", "\\\"");
+            //value = value.Replace("\"", "\\\"");
 
             temp.setSingleValue(value);
-            
+
         }
 
-        public void add(string objectName, string value)
+        public void set(string objectName, string value)
         {
             if (objectName != "")
                 objectName = objectName + ":";
@@ -79,7 +79,7 @@ namespace JsonMaker
 
         }
 
-        public void add(string objectName, JsonMaker toImport)
+        public void set(string objectName, JsonMaker toImport)
         {
             if (objectName != "")
                 objectName = objectName + ":";
@@ -119,7 +119,7 @@ namespace JsonMaker
             if (currentItem == null)
                 currentItem = this.root;
 
-            
+
             string parentName = "";
 
             List<string> childsNames;
@@ -127,7 +127,7 @@ namespace JsonMaker
             for (int cont = 0; cont < currentItem.__getChilds().Count; cont++)
             {
 
-                
+
                 childsNames = getObjectsNames(currentItem.__getChilds().ElementAt(cont).Value);
 
                 //adiciona os filhos ao resultado
@@ -139,9 +139,10 @@ namespace JsonMaker
                     string nAtt = att;
                     if (nAtt != "")
                         nAtt = parentName + '.' + nAtt;
-                    
+
                     retorno.Add(nAtt);
                 }
+                retorno.Add(currentItem.__getChilds().ElementAt(cont).Key);
             }
             return retorno;
 
@@ -150,7 +151,7 @@ namespace JsonMaker
         public List<string> getObjectsNames(string objectName = "")
         {
 
-            List<string> retorno = this.getObjectsNames(this.root);
+            /*List<string> retorno = this.getObjectsNames(this.root);
 
             //remove os items que não atendem ao filtro
             if (objectName != "")
@@ -161,6 +162,10 @@ namespace JsonMaker
                         retorno.RemoveAt(cont);
                 }
             }
+
+            return retorno;*/
+
+            List<string> retorno = this.getObjectsNames(this.find(objectName, false, this.root));
 
             return retorno;
 
@@ -297,9 +302,11 @@ namespace JsonMaker
 
         private string clearJsonString(string json)
         {
-            StringBuilder result = new StringBuilder();
+            //StringBuilder result = new StringBuilder();
+            string result = "";
             bool quotes = false;
 
+            char oldAtt = (char)0;
             foreach (char att in json)
             {
                 if (att == '\"')
@@ -308,26 +315,38 @@ namespace JsonMaker
                 if (!quotes)
                 {
                     if (!"\r\n\t ".Contains(att))
-                        result.Append(att);
+                        result += att;
                 }
                 else
                 {
-                    result.Append(att);
+                    result += att;
                 }
             }
 
-            //result = result.Replace("\r", "\\r").Replace("\n", "\\n");
-            return result.ToString();
+
+
+            //o código abaixo, em determinados textos dá erro de overflow na função StringBuilder.ToString.
+            try
+            {
+                //string resultado = result.ToString();
+                //return resultado;
+                return result;
+            }
+            catch (Exception e)
+            {
+                //Log.cat("JsonMaker", "Exception width '" + json + "': " + e.Message);
+                return json;
+            }
         }
 
         private bool isAJson(string json, bool objects = true, bool arrays = true)
         {
             bool quotes = false;
-            
 
+            char oldAtt = (char)0;
             foreach (char att in json)
             {
-                if ((att == '\"') || (att == '\''))
+                if ((att == '\"') && (oldAtt != '\\'))
                     quotes = !quotes;
 
                 if (!quotes)
@@ -349,7 +368,19 @@ namespace JsonMaker
 
         public string getString(string name)
         {
-            return this.get(name);
+            string result = this.get(name);
+            if ((result.Length > 0) && (result[0] == '"'))
+                result = result.Substring(1);
+            if ((result.Length > 0) && (result[result.Length - 1] == '"'))
+                result = result.Substring(0, result.Length - 1);
+
+            return result;
+
+        }
+
+        public void setString(string name, string value)
+        {
+            this.set(name, '"' + value + '"');
         }
 
         public int getInt(string name)
@@ -357,9 +388,19 @@ namespace JsonMaker
             return int.Parse(getOnly(this.get(name), "0123456789-"));
         }
 
+        public void setInt(string name, int value)
+        {
+            this.set(name, value.ToString());
+        }
+
         public Int64 getInt64(string name)
         {
             return Int64.Parse(getOnly(this.get(name), "0123456789-"));
+        }
+
+        public void setInt64(string name, Int64 value)
+        {
+            this.set(name, value.ToString());
         }
 
         public bool getBoolean(string name)
@@ -370,14 +411,29 @@ namespace JsonMaker
                 return false;
         }
 
+        public void setBoolean(string name, bool value)
+        {
+            this.set(name, value.ToString().ToLower());
+        }
+
         public DateTime getDateTime(string name)
         {
             return DateTime.Parse(getOnly(this.get(name), "0123456789/: TU"));
         }
 
+        public void setDateTime(string name, DateTime value)
+        {
+            this.set(name, '"' + value.ToString() + '"');
+        }
+
         public double getDouble(string name)
         {
             return double.Parse(getOnly(this.get(name).Replace('.', ','), "0123456789-,"));
+        }
+
+        public void setDouble(string name, double value)
+        {
+            this.set(name, value.ToString().Replace(',', '.'));
         }
 
         private string getOnly(string text, string chars)
