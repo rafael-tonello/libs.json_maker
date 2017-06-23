@@ -92,10 +92,10 @@ namespace JsonMaker
             return root.ToJson(quotesOnNames);
         }
 
-        public string ToString(bool quotesOnNames = true)
+        /*public string ToString(bool quotesOnNames = true)
         {
             return root.ToJson(quotesOnNames);
-        }
+        }*/
 
         public bool contains(string objectName)
         {
@@ -185,11 +185,12 @@ namespace JsonMaker
 
         }
 
-        private void parseJson(string json, string parentName = "")
+        public void parseJson(string json, string parentName = "")
         {
             //limpa o json, removendo coisas desnecessárias como espaços em branco e tabs
-            json = clearJsonString(json);
+            //json = clearJsonString(json);
             string name = "";
+
             string value = json;
 
             //verifica se o json é uma par chave<-> valor. Se for pega o nome
@@ -199,7 +200,7 @@ namespace JsonMaker
                 int index = 0;
                 while (json[index] != ':')
                 {
-                    if ("\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnop.qrstuvxywz0123456789[]".Contains(json[index]))
+                    if ("\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnop.qrstuvxywz0123456789[] ".Contains(json[index]))
                         name += json[index];
                     else
                     {
@@ -221,13 +222,13 @@ namespace JsonMaker
 
             //se tiver um '{' ou um '[', então processa independentemente cacda um de seus valroes
             List<string> childs = new List<string>();
-            if (value[0] == '[')
+            if ((value != "") && (value[0] == '['))
             {
                 childs = getJsonFields(value);
                 for (int cont = 0; cont < childs.Count; cont++)
                     childs[cont] = cont + ":" + childs[cont];
             }
-            else if (value[0] == '{')
+            else if ((value != "") && (value[0] == '{'))
                 childs = getJsonFields(value);
             else
                 childs.Add(value);
@@ -302,11 +303,10 @@ namespace JsonMaker
 
         private string clearJsonString(string json)
         {
-            //StringBuilder result = new StringBuilder();
-            string result = "";
+            StringBuilder result = new StringBuilder();
+
             bool quotes = false;
 
-            char oldAtt = (char)0;
             foreach (char att in json)
             {
                 if (att == '\"')
@@ -315,26 +315,20 @@ namespace JsonMaker
                 if (!quotes)
                 {
                     if (!"\r\n\t ".Contains(att))
-                        result += att;
+                        result.Append(att);
                 }
                 else
                 {
-                    result += att;
+                    result.Append(att);
                 }
             }
-
-
-
-            //o código abaixo, em determinados textos dá erro de overflow na função StringBuilder.ToString.
+            
             try
             {
-                //string resultado = result.ToString();
-                //return resultado;
-                return result;
+                return result.ToString();
             }
-            catch (Exception e)
+            catch
             {
-                //Log.cat("JsonMaker", "Exception width '" + json + "': " + e.Message);
                 return json;
             }
         }
@@ -344,8 +338,12 @@ namespace JsonMaker
             bool quotes = false;
 
             char oldAtt = (char)0;
+            int cont = 0;
+            json = json.TrimStart();
+
             foreach (char att in json)
             {
+                cont++;
                 if ((att == '\"') && (oldAtt != '\\'))
                     quotes = !quotes;
 
@@ -353,9 +351,9 @@ namespace JsonMaker
                 {
                     if (att == ':')
                         return true;
-                    if ((objects) && ("{}".Contains(att)))
+                    if ((objects) && ("{}".Contains(att)) && (cont == 0))
                         return true;
-                    else if ((arrays) && ("[]".Contains(att)))
+                    else if ((arrays) && ("[]".Contains(att) && (cont == 0)))
                         return true;
                 }
             }
@@ -374,12 +372,16 @@ namespace JsonMaker
             if ((result.Length > 0) && (result[result.Length - 1] == '"'))
                 result = result.Substring(0, result.Length - 1);
 
+            result = result.Replace("\\\\", "\\").Replace("\\\"", "\"");
             return result;
 
         }
 
         public void setString(string name, string value)
         {
+            if (value == null)
+                value = "";
+            value = value.Replace("\\", "\\\\").Replace("\"", "\\\"");
             this.set(name, '"' + value + '"');
         }
 

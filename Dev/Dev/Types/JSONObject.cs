@@ -93,6 +93,10 @@ class JSONObject
             else
                 return this.singleValue;
         }
+        else if (this.type == SOType.Double)
+        {
+            return this.singleValue.Replace(',', '.');
+        }
         else
             return this.singleValue;
 
@@ -105,7 +109,7 @@ class JSONObject
         double sucess2 = 0;
 
         //trye as null
-        if ((value == null) || (value == "null"))
+        if ((value == null) || (value == "null") || (value == ""))
             this.type = SOType.Null;
         else
         {
