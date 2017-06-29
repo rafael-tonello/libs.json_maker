@@ -188,7 +188,7 @@ namespace JsonMaker
         public void parseJson(string json, string parentName = "")
         {
             //limpa o json, removendo coisas desnecessárias como espaços em branco e tabs
-            //json = clearJsonString(json);
+            json = clearJsonString(json);
             string name = "";
 
             string value = json;
@@ -356,6 +356,7 @@ namespace JsonMaker
                     else if ((arrays) && ("[]".Contains(att) && (cont == 0)))
                         return true;
                 }
+				oldAtt = att;
             }
 
             return false;
