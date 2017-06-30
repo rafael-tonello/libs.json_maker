@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace JsonStringClear_unitTests.Properties
+namespace Dev.Properties
 {
 
 
