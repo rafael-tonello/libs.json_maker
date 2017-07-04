@@ -11,7 +11,6 @@ namespace JsonMaker
     {
 
         private JSONObject root = new JSONObject(null);
-		private Semaphore interfaceSemaphore = new Semaphore(1, 1);
         public void clear()
         {
             root.clear();
@@ -87,12 +86,24 @@ namespace JsonMaker
             {
                 if (parentNodes.ElementAt(cont).Value == node)
                 {
-                    parentNodes.Remove(parentNodes.ElementAt(cont).Key);
+                    //if parent is an array, pull the elements forward backwards
+                    if (node.parent.isArray())
+                    {
+                        for (int cont2 = cont; cont2 < parentNodes.Count - 1; cont2++)
+                            parentNodes[parentNodes.ElementAt(cont2).Key] = parentNodes[parentNodes.ElementAt(cont2 + 1).Key];
+
+                        parentNodes.Remove(parentNodes.Last().Key);
+                    }
+                    else
+                    {
+                        parentNodes.Remove(parentNodes.ElementAt(cont).Key);
+                    }
                     break;
                 }
             }
         }
-		
+
+        Semaphore interfaceSemaphore = new Semaphore(1, 1);
         public void del(string objectName)
         {
             interfaceSemaphore.WaitOne();
