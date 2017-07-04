@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JsonMaker
@@ -10,6 +11,7 @@ namespace JsonMaker
     {
 
         private JSONObject root = new JSONObject(null);
+		private Semaphore interfaceSemaphore = new Semaphore(1, 1);
         public void clear()
         {
             root.clear();
@@ -71,11 +73,46 @@ namespace JsonMaker
 
         }
 
+        private void del(JSONObject node)
+        {
+            var childs = node.__getChilds();
+            while (childs.Count > 0)
+            {
+                del(childs.ElementAt(0).Value);
+            }
+            childs.Clear();
+
+            var parentNodes = node.parent.__getChilds();
+            for (int cont = 0; cont < parentNodes.Count; cont++)
+            {
+                if (parentNodes.ElementAt(cont).Value == node)
+                {
+                    parentNodes.Remove(parentNodes.ElementAt(cont).Key);
+                    break;
+                }
+            }
+        }
+		
+        public void del(string objectName)
+        {
+            interfaceSemaphore.WaitOne();
+            JSONObject temp = this.find(objectName, false, this.root);
+            if (temp != null)
+                del(temp);
+
+            interfaceSemaphore.Release();
+
+
+        }
+
         public void set(string objectName, string value)
         {
+            interfaceSemaphore.WaitOne();
+
             if (objectName != "")
                 objectName = objectName + ":";
             this.parseJson(objectName + value);
+            interfaceSemaphore.Release();
 
         }
 
@@ -89,22 +126,25 @@ namespace JsonMaker
 
         public string ToJson(bool quotesOnNames = true)
         {
-            return root.ToJson(quotesOnNames);
+            interfaceSemaphore.WaitOne();
+            string result = root.ToJson(quotesOnNames);
+            interfaceSemaphore.Release();
+            return result;
         }
-
-        /*public string ToString(bool quotesOnNames = true)
-        {
-            return root.ToJson(quotesOnNames);
-        }*/
 
         public bool contains(string objectName)
         {
-            return this.find(objectName, false, this.root) != null;
+            interfaceSemaphore.WaitOne();
+            bool result = this.find(objectName, false, this.root) != null;
+            interfaceSemaphore.Release();
+            return result;
         }
 
         public string get(string objectName, bool quotesOnNames = true)
         {
+            interfaceSemaphore.WaitOne();
             JSONObject temp = this.find(objectName, false, this.root);
+            interfaceSemaphore.Release();
             if (temp != null)
                 return temp.ToJson(quotesOnNames);
             else
@@ -356,7 +396,7 @@ namespace JsonMaker
                     else if ((arrays) && ("[]".Contains(att) && (cont == 0)))
                         return true;
                 }
-				oldAtt = att;
+                oldAtt = att;
             }
 
             return false;
