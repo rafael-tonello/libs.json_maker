@@ -116,6 +116,22 @@ namespace JsonMaker
 
         }
 
+        public void clearChilds(string objectName)
+        {
+            JSONObject temp = this.find(objectName, false, this.root);
+            if (temp != null)
+            {
+                var childs = temp.__getChilds();
+                while (childs.Count > 0)
+                {
+                    del(childs.ElementAt(0).Value);
+                }
+            }
+            
+
+
+        }
+
         public void set(string objectName, string value)
         {
             interfaceSemaphore.WaitOne();
