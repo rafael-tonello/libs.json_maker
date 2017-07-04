@@ -432,7 +432,7 @@ namespace JsonMaker
         #endregion
 
 
-        public string getString(string name)
+        public string getString(string name, string defaultValue = "")
         {
             string result = this.get(name);
             if ((result.Length > 0) && (result[0] == '"'))
@@ -441,7 +441,11 @@ namespace JsonMaker
                 result = result.Substring(0, result.Length - 1);
 
             result = result.Replace("\\\\", "\\").Replace("\\\"", "\"");
-            return result;
+
+            if (result != "")
+                return result;
+            else
+                return defaultValue;
 
         }
 
@@ -453,9 +457,12 @@ namespace JsonMaker
             this.set(name, '"' + value + '"');
         }
 
-        public int getInt(string name)
+        public int getInt(string name, int defaultValue = 0)
         {
-            return int.Parse(getOnly(this.get(name), "0123456789-"));
+            string temp = getOnly(this.get(name), "0123456789-");
+            if (temp != "")
+                return int.Parse(temp);
+            else return defaultValue;
         }
 
         public void setInt(string name, int value)
@@ -463,9 +470,12 @@ namespace JsonMaker
             this.set(name, value.ToString());
         }
 
-        public Int64 getInt64(string name)
+        public Int64 getInt64(string name, Int64 defaultValue = 0)
         {
-            return Int64.Parse(getOnly(this.get(name), "0123456789-"));
+            string temp = getOnly(this.get(name), "0123456789-");
+            if (temp != "")
+                return Int64.Parse(temp);
+            else return defaultValue;
         }
 
         public void setInt64(string name, Int64 value)
@@ -473,12 +483,17 @@ namespace JsonMaker
             this.set(name, value.ToString());
         }
 
-        public bool getBoolean(string name)
+        public bool getBoolean(string name, bool defaultValue = false)
         {
-            if (this.get(name).ToLower() == "true")
-                return true;
-            else
-                return false;
+            string temp = this.get(name);
+            if (temp != "")
+            {
+                if (temp.ToLower() == "true")
+                    return true;
+                else
+                    return false;
+            }
+            else return defaultValue;
         }
 
         public void setBoolean(string name, bool value)
@@ -488,7 +503,12 @@ namespace JsonMaker
 
         public DateTime getDateTime(string name)
         {
-            return DateTime.Parse(getOnly(this.get(name), "0123456789/: TU"));
+            string temp = getOnly(this.get(name), "0123456789/: TU");
+            if (temp != "")
+                return DateTime.Parse(temp);
+            else
+                return new DateTime(0);
+
         }
 
         public void setDateTime(string name, DateTime value)
@@ -496,9 +516,12 @@ namespace JsonMaker
             this.set(name, '"' + value.ToString() + '"');
         }
 
-        public double getDouble(string name)
+        public double getDouble(string name, double defaultValue = 0)
         {
-            return double.Parse(getOnly(this.get(name).Replace('.', ','), "0123456789-,"));
+            string temp = getOnly(this.get(name).Replace('.', ','), "0123456789-,");
+            if (temp != null)
+                return double.Parse(temp);
+            else return defaultValue;
         }
 
         public void setDouble(string name, double value)
