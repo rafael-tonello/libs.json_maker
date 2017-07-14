@@ -217,25 +217,30 @@ namespace JsonMaker
 
         public List<string> getObjectsNames(string objectName = "")
         {
-
-            /*List<string> retorno = this.getObjectsNames(this.root);
-
-            //remove os items que não atendem ao filtro
-            if (objectName != "")
-            {
-                for (int cont = retorno.Count - 1; cont >= 0; cont--)
-                {
-                    if (!(retorno[cont].IndexOf(objectName) == 0))
-                        retorno.RemoveAt(cont);
-                }
-            }
-
-            return retorno;*/
-
             List<string> retorno = this.getObjectsNames(this.find(objectName, false, this.root));
 
             return retorno;
+        }
+		
+		private List<string> getChildsNames(JSONObject currentItem = null)
+        {
+            List<string> retorno = new List<string>();
 
+            if (currentItem == null)
+                currentItem = this.root;
+            
+            for (int cont = 0; cont < currentItem.__getChilds().Count; cont++)
+            {
+                retorno.Add(currentItem.__getChilds().ElementAt(cont).Key);
+            }
+            return retorno;
+        }
+
+        public List<string> getChildsNames(string objectName = "")
+        {
+            List<string> retorno = this.getChildsNames(this.find(objectName, false, this.root));
+
+            return retorno;
         }
 
         #region json parser
