@@ -458,7 +458,7 @@ namespace JsonMaker
         {
             if (value == null)
                 value = "";
-            value = value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            value = value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
             this.set(name, '"' + value + '"');
         }
 

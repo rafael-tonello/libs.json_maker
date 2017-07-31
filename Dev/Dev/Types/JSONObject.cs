@@ -138,7 +138,7 @@ class JSONObject
         }
     }
 
-    private bool isArray()
+    public bool isArray()
     {
         int temp = 0;
 
