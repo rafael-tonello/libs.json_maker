@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JsonMaker
 {
-    class JsonMaker
+    public class JsonMaker
     {
 
         private JSONObject root = new JSONObject(null);
@@ -379,9 +379,10 @@ namespace JsonMaker
 
             bool quotes = false;
 
+            char oldAtt = ' ';
             foreach (char att in json)
             {
-                if (att == '\"')
+                if ((att == '\"') && (oldAtt != '\\'))
                     quotes = !quotes;
 
                 if (!quotes)
@@ -393,6 +394,8 @@ namespace JsonMaker
                 {
                     result.Append(att);
                 }
+
+                oldAtt = att;
             }
             
             try
@@ -445,7 +448,7 @@ namespace JsonMaker
             if ((result.Length > 0) && (result[result.Length - 1] == '"'))
                 result = result.Substring(0, result.Length - 1);
 
-            result = result.Replace("\\\\", "\\").Replace("\\\"", "\"");
+            result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
 
             if (result != "")
                 return result;
