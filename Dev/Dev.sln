@@ -5,6 +5,10 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dev", "Dev\Dev.csproj", "{184A5BCF-C476-43E6-9421-F5469731B221}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JSONAPDb", "JSONDb\JSONAPDb.csproj", "{16A08EED-3233-4337-BBEE-6A2B93960BF5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JSONFs", "JSONFs\JSONFs.csproj", "{32B27D65-F419-474A-8E41-96509CB37290}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{184A5BCF-C476-43E6-9421-F5469731B221}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{184A5BCF-C476-43E6-9421-F5469731B221}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{184A5BCF-C476-43E6-9421-F5469731B221}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16A08EED-3233-4337-BBEE-6A2B93960BF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16A08EED-3233-4337-BBEE-6A2B93960BF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16A08EED-3233-4337-BBEE-6A2B93960BF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16A08EED-3233-4337-BBEE-6A2B93960BF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32B27D65-F419-474A-8E41-96509CB37290}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32B27D65-F419-474A-8E41-96509CB37290}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32B27D65-F419-474A-8E41-96509CB37290}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32B27D65-F419-474A-8E41-96509CB37290}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

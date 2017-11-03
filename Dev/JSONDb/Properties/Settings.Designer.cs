@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Dev.Properties
+namespace JSONDb.Properties
 {
 
 

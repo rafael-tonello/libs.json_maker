@@ -9,16 +9,13 @@ namespace Common.ApStorage
 {
     public class ApStorage
     {
-        int dSize = 512;
-        int kSize = 512;
+        int dSize = 50;
+        int kSize = 128;
         ApDbInterface confs;
 
-        public ApStorage(bool userRamFile, string opFilename = "vars.apdb", bool acessoExclusivo = false)
+        public ApStorage(string opFilename = "vars.apdb", bool acessoExclusivo = false)
         {
-            if (userRamFile)
-                confs = new ApRamDB2(kSize, dSize);
-            else
-                confs = new ApFileDB2(kSize, dSize, acessoExclusivo, opFilename, false);
+            confs = new ApFileDB2(kSize, dSize, acessoExclusivo, opFilename, false);
         }
        
         bool usando = false;
