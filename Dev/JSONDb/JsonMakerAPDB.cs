@@ -338,7 +338,8 @@ namespace JsonMaker
                 var toInsert = att;
 
                 //adiciona o objeto à lista
-                this._set(tempName, toInsert);
+                if (toInsert != json)
+                    this._set(tempName, toInsert);
             }
         }
 
