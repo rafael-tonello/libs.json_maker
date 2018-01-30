@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 class JSONFSObject
 {
 
     public enum SOType { Null, String, Int, Double, Boolean }
     public string baseName;
+    Dictionary<string, Semaphore> accessControl = new Dictionary<string, Semaphore>();
 
 
     private  string getKey(string key, string defValue = "")
@@ -17,18 +19,28 @@ class JSONFSObject
         {
             if (File.Exists(baseName + "\\.DATA\\" + key.ToUpper()))
             {
-                return File.ReadAllText(baseName + "\\.DATA\\" + key.ToUpper());
+                string ret = "";
+                writeSem.WaitOne();
+                ret = File.ReadAllText(baseName + "\\.DATA\\" + key.ToUpper());
+                writeSem.Release();
+                return ret;
             }
         }
-
         return defValue;
     }
 
+    public static Semaphore writeSem = new Semaphore(1, 1);
     private void setKey(string key, string value)
     {
+
         createDirectoryPath(baseName + "\\.DATA");
-        
+
+        writeSem.WaitOne();
         File.WriteAllText(baseName + "\\.DATA\\" + key.ToUpper(), value);
+        writeSem.Release();
+
+
+
 
     }
     public string getSingleName()
@@ -60,7 +72,11 @@ class JSONFSObject
     private int childs_Count()
     {
         int ret = 0;
-        ret = int.Parse(getKey("childs.count", "0"));
+        try
+        {
+            ret = int.Parse(getKey("childs.count", "0"));
+        }
+        catch { }
 
         return ret;
     }
@@ -261,6 +277,7 @@ class JSONFSObject
 
     private void createDirectoryPath(string path)
     {
+        if (path == "") return;
         string[] names = path.Replace('/', '\\').Split('\\');
         string currDirectory =  "";
         foreach (var curr in names)
@@ -269,8 +286,28 @@ class JSONFSObject
                 currDirectory += "\\";
             currDirectory += curr;
 
-            if (!Directory.Exists(currDirectory))
+            if ((!Directory.Exists(currDirectory) && (currDirectory != "")))
                 Directory.CreateDirectory(currDirectory);
         }
     }
+
+    private void waitSemaphroe(string keyName)
+    {
+        if (!accessControl.ContainsKey(keyName))
+            accessControl[keyName] = new Semaphore(1, 1, keyName);
+
+        accessControl[keyName].WaitOne();
+    }
+
+    private void releaseSemaphore(string keyName)
+    {
+        if (accessControl.ContainsKey(keyName))
+        {
+            accessControl[keyName].Release();
+            if (accessControl.Count > 100)
+                accessControl.Remove(keyName);
+        }
+    }
+
+    
 }

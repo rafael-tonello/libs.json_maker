@@ -36,6 +36,9 @@ namespace JsonMaker
             string childsNames = "";
             JSONFSObject childOnParent;
 
+            if (currentParent == null)
+                return new JSONFSObject("");
+
             if (objectName.IndexOf('.') > -1)
             {
                 currentName = objectName.Substring(0, objectName.IndexOf('.'));
@@ -50,7 +53,11 @@ namespace JsonMaker
                     return null;
             }
 
-            childOnParent = currentParent.__getChilds()[currentName];
+            try
+            {
+                childOnParent = currentParent.__getChilds()[currentName];
+            }
+            catch { childOnParent = null; }
 
 
             if (childsNames == "")
