@@ -217,7 +217,10 @@ namespace JsonMaker
 
         public List<string> getObjectsNames(string objectName = "")
         {
-            List<string> retorno = this.getObjectsNames(this.find(objectName, false, this.root));
+            var finded = this.find(objectName, false, this.root);
+            List<string> retorno = new List<string>();
+            if (finded != null)
+                retorno = this.getObjectsNames(finded);
 
             return retorno;
         }
