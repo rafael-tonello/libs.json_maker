@@ -241,7 +241,10 @@ namespace JsonMaker
 
         public List<string> getChildsNames(string objectName = "")
         {
-            List<string> retorno = this.getChildsNames(this.find(objectName, false, this.root));
+            var finded = this.find(objectName, false, this.root);
+            List<string> retorno = new List<string>();
+            if (finded != null)
+                retorno = this.getChildsNames(finded);
 
             return retorno;
         }
@@ -452,7 +455,37 @@ namespace JsonMaker
             if ((result.Length > 0) && (result[result.Length - 1] == '"'))
                 result = result.Substring(0, result.Length - 1);
 
-            result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
+            //result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
+			string nValue = "";
+            int cont;
+            for (cont = 0; cont < result.Length - 1; cont++) 
+            {
+                if (result[cont] == '\\')
+                {
+                    if (result[cont + 1] == '\\')
+                        nValue += '\\';
+                    else if (result[cont + 1] == '\"')
+                        nValue += '\"';
+                    else if (result[cont + 1] == '\r')
+                        nValue += '\r';
+                    else if (result[cont + 1] == '\n')
+                        nValue += '\n';
+                    else if (result[cont + 1] == '\t')
+                        nValue += '\t';
+                    else
+                        nValue += '?';
+
+                    cont++;
+                }
+                else
+                    nValue += result[cont];
+
+                //cont++;
+
+
+            }
+            if (cont < result.Length)
+                result = nValue + result[cont];
 
             if (result != "")
                 return result;
