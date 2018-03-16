@@ -19,7 +19,7 @@ namespace Dev
 
         private void button1_Click(object sender, EventArgs e)
         {
-            JsonMaker.JsonMaker jm = new JsonMaker.JsonMaker();
+            JsonMaker.JSON jm = new JsonMaker.JSON();
             //jm.add("pai.filho1", "valor do filho1");
 
             jm.set("pai", "{f1:[{f2:\"f3\"}, \"f4\"]}");
@@ -57,7 +57,7 @@ namespace Dev
 
         private void button2_Click(object sender, EventArgs e)
         {
-            JsonMaker.JsonMaker jm = new JsonMaker.JsonMaker();
+            JsonMaker.JSON jm = new JsonMaker.JSON();
             jm.fromJson(textBox1.Text);
             textBox1.Text = jm.ToJson();
         }

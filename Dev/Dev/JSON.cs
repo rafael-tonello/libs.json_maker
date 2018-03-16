@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JsonMaker
 {
-    public class JsonMaker
+    public class JSON
     {
 
         private JSONObject root = new JSONObject(null);
@@ -127,7 +127,7 @@ namespace JsonMaker
                     del(childs.ElementAt(0).Value);
                 }
             }
-            
+
 
 
         }
@@ -143,7 +143,7 @@ namespace JsonMaker
 
         }
 
-        public void set(string objectName, JsonMaker toImport)
+        public void set(string objectName, JSON toImport)
         {
             if (objectName != "")
                 objectName = objectName + ":";
@@ -224,14 +224,14 @@ namespace JsonMaker
 
             return retorno;
         }
-		
-		private List<string> getChildsNames(JSONObject currentItem = null)
+
+        private List<string> getChildsNames(JSONObject currentItem = null)
         {
             List<string> retorno = new List<string>();
 
             if (currentItem == null)
                 currentItem = this.root;
-            
+
             for (int cont = 0; cont < currentItem.__getChilds().Count; cont++)
             {
                 retorno.Add(currentItem.__getChilds().ElementAt(cont).Key);
@@ -353,7 +353,8 @@ namespace JsonMaker
                         temp.Clear();
                     }
                     else
-                        temp.Append(json[cont]);
+                        if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
+                            temp.Append(json[cont]);
                 }
 
                 else
@@ -364,11 +365,12 @@ namespace JsonMaker
                         open--;
                     else if (json[cont] == '"')
                     {
-                        if (json[cont - 1] != '\\')
+                        if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
                             quotes = !quotes;
                     }
 
-                    temp.Append(json[cont]);
+                    if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
+                        temp.Append(json[cont]);
                 }
 
 
@@ -385,11 +387,11 @@ namespace JsonMaker
             StringBuilder result = new StringBuilder();
 
             bool quotes = false;
-
+            char oldOldAtt = ' ';
             char oldAtt = ' ';
             foreach (char att in json)
             {
-                if ((att == '\"') && (oldAtt != '\\'))
+                if ((att == '\"') && ((oldAtt != '\\') || (oldOldAtt == '\\')))
                     quotes = !quotes;
 
                 if (!quotes)
@@ -402,11 +404,14 @@ namespace JsonMaker
                     result.Append(att);
                 }
 
+                oldOldAtt = oldAtt;
                 oldAtt = att;
             }
-            
+
             try
             {
+                //var result2 = __unescapeString(result.ToString());
+                //return result2;
                 return result.ToString();
             }
             catch
@@ -455,37 +460,7 @@ namespace JsonMaker
             if ((result.Length > 0) && (result[result.Length - 1] == '"'))
                 result = result.Substring(0, result.Length - 1);
 
-            //result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
-			string nValue = "";
-            int cont;
-            for (cont = 0; cont < result.Length - 1; cont++) 
-            {
-                if (result[cont] == '\\')
-                {
-                    if (result[cont + 1] == '\\')
-                        nValue += '\\';
-                    else if (result[cont + 1] == '\"')
-                        nValue += '\"';
-                    else if (result[cont + 1] == '\r')
-                        nValue += '\r';
-                    else if (result[cont + 1] == '\n')
-                        nValue += '\n';
-                    else if (result[cont + 1] == '\t')
-                        nValue += '\t';
-                    else
-                        nValue += '?';
-
-                    cont++;
-                }
-                else
-                    nValue += result[cont];
-
-                //cont++;
-
-
-            }
-            if (cont < result.Length)
-                result = nValue + result[cont];
+            result = __unescapeString(result);
 
             if (result != "")
                 return result;
@@ -581,6 +556,43 @@ namespace JsonMaker
                 if (chars.Contains(att))
                     ret.Append(att);
             return ret.ToString();
+        }
+
+        private string __unescapeString(string data)
+        {
+            //result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
+            string nValue = "";
+            int cont;
+            for (cont = 0; cont < data.Length - 1; cont++)
+            {
+                if (data[cont] == '\\')
+                {
+                    if (data[cont + 1] == '\"')
+                        nValue += '\"';
+                    else if (data[cont + 1] == '\r')
+                        nValue += '\r';
+                    else if (data[cont + 1] == '\n')
+                        nValue += '\n';
+                    else if (data[cont + 1] == '\t')
+                        nValue += '\t';
+                    else if (data[cont + 1] == '\\')
+                        nValue += '\\';
+                    else
+                        nValue += '?';
+
+                    cont++;
+                }
+                else
+                    nValue += data[cont];
+
+                //cont++;
+
+
+            }
+            if (cont < data.Length)
+                nValue = nValue + data[cont];
+
+            return nValue;
         }
     }
 }
