@@ -353,23 +353,27 @@ namespace JsonMaker
                         temp.Clear();
                     }
                     else
-                        if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
+                        //if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
                             temp.Append(json[cont]);
                 }
 
                 else
                 {
-                    if ((json[cont] == '{') || (json[cont] == '['))
-                        open++;
-                    else if ((json[cont] == '}') || (json[cont] == ']'))
-                        open--;
-                    else if (json[cont] == '"')
+                    if (!quotes)
+                    {
+                        if ((json[cont] == '{') || (json[cont] == '['))
+                            open++;
+                        else if ((json[cont] == '}') || (json[cont] == ']'))
+                            open--;
+                    }
+
+                    if (json[cont] == '"')
                     {
                         if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
                             quotes = !quotes;
                     }
 
-                    if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
+                   // if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
                         temp.Append(json[cont]);
                 }
 
