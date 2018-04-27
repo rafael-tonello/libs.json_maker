@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JsonMaker
 {
-    public class JSON
+    public class JSON: IDisposable
     {
 
         private JSONObject root = new JSONObject(null);
@@ -16,7 +16,11 @@ namespace JsonMaker
             root.clear();
         }
 
-
+        public JSON() { }
+        public JSON(string JsonString)
+        {
+            this.parseJson(JsonString);
+        }
         private JSONObject find(string objectName, bool autoCreateTree, JSONObject currentParent)
         {
             //quebra o nome em um array
@@ -104,6 +108,11 @@ namespace JsonMaker
         }
 
         Semaphore interfaceSemaphore = new Semaphore(1, 1);
+
+        /// <summary>
+        /// Removes an object from JSON three
+        /// </summary>
+        /// <param name="objectName">The object name</param>
         public void del(string objectName)
         {
             interfaceSemaphore.WaitOne();
@@ -132,6 +141,11 @@ namespace JsonMaker
 
         }
 
+        /// <summary>
+        /// Set or creates an property with an json string
+        /// </summary>
+        /// <param name="objectName">The json object name</param>
+        /// <param name="value">The json string </param>
         public void set(string objectName, string value)
         {
             interfaceSemaphore.WaitOne();
@@ -143,6 +157,11 @@ namespace JsonMaker
 
         }
 
+        /// <summary>
+        /// Insert a new json in current json three
+        /// </summary>
+        /// <param name="objectName">Name of the object</param>
+        /// <param name="toImport">Json to be imported</param>
         public void set(string objectName, JSON toImport)
         {
             if (objectName != "")
@@ -151,6 +170,11 @@ namespace JsonMaker
 
         }
 
+        /// <summary>
+        /// Serialize the Json three
+        /// </summary>
+        /// <param name="quotesOnNames">User '"' in name of objects</param>
+        /// <returns></returns>
         public string ToJson(bool quotesOnNames = true)
         {
             interfaceSemaphore.WaitOne();
@@ -159,6 +183,16 @@ namespace JsonMaker
             return result;
         }
 
+        public override string ToString()
+        {
+            return this.ToJson();
+        }
+
+        /// <summary>
+        /// Return true if the an object is in json three
+        /// </summary>
+        /// <param name="objectName">The object name</param>
+        /// <returns></returns>
         public bool contains(string objectName)
         {
             interfaceSemaphore.WaitOne();
@@ -167,6 +201,12 @@ namespace JsonMaker
             return result;
         }
 
+        /// <summary>
+        /// returns the value of an json object as a json string (Serialize an object)
+        /// </summary>
+        /// <param name="objectName">The object name</param>
+        /// <param name="quotesOnNames">User '"' in names</param>
+        /// <returns></returns>
         public string get(string objectName, bool quotesOnNames = true)
         {
             interfaceSemaphore.WaitOne();
@@ -194,14 +234,15 @@ namespace JsonMaker
             for (int cont = 0; cont < currentItem.__getChilds().Count; cont++)
             {
 
-
                 childsNames = getObjectsNames(currentItem.__getChilds().ElementAt(cont).Value);
 
+
+                parentName = currentItem.__getChilds().ElementAt(cont).Key;
                 //adiciona os filhos ao resultado
                 //verifica se o nome atual atende ao filtro
                 foreach (var att in childsNames)
                 {
-                    parentName += currentItem.__getChilds().ElementAt(cont).Key;
+
 
                     string nAtt = att;
                     if (nAtt != "")
@@ -215,14 +256,27 @@ namespace JsonMaker
 
         }
 
+        /// <summary>
+        /// Return all names of the json three of an object
+        /// </summary>
+        /// <param name="objectName">The name of object</param>
+        /// <returns></returns>
         public List<string> getObjectsNames(string objectName = "")
         {
-            var finded = this.find(objectName, false, this.root);
-            List<string> retorno = new List<string>();
-            if (finded != null)
-                retorno = this.getObjectsNames(finded);
+            if (objectName == "")
+            {
+                JSONObject nullo = null;
+                return this.getObjectsNames(nullo);
+            }
+            else
+            {
+                var finded = this.find(objectName, false, this.root);
+                List<string> retorno = new List<string>();
+                if (finded != null)
+                    retorno = this.getObjectsNames(finded);
 
-            return retorno;
+                return retorno;
+            }
         }
 
         private List<string> getChildsNames(JSONObject currentItem = null)
@@ -239,14 +293,27 @@ namespace JsonMaker
             return retorno;
         }
 
+        /// <summary>
+        /// Return the childNames of an json object
+        /// </summary>
+        /// <param name="objectName">The name of object</param>
+        /// <returns></returns>
         public List<string> getChildsNames(string objectName = "")
         {
-            var finded = this.find(objectName, false, this.root);
-            List<string> retorno = new List<string>();
-            if (finded != null)
-                retorno = this.getChildsNames(finded);
+            if (objectName == "")
+            {
+                JSONObject nullo = null;
+                return this.getChildsNames(nullo);
+            }
+            else
+            {
+                var finded = this.find(objectName, false, this.root);
+                List<string> retorno = new List<string>();
+                if (finded != null)
+                    retorno = this.getChildsNames(finded);
+                return retorno;
+            }
 
-            return retorno;
         }
 
         #region json parser
@@ -254,7 +321,6 @@ namespace JsonMaker
         public void fromJson(string json)
         {
             this.parseJson(json);
-
         }
 
         public void fromString(string json)
@@ -354,7 +420,7 @@ namespace JsonMaker
                     }
                     else
                         //if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
-                            temp.Append(json[cont]);
+                        temp.Append(json[cont]);
                 }
 
                 else
@@ -373,8 +439,8 @@ namespace JsonMaker
                             quotes = !quotes;
                     }
 
-                   // if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
-                        temp.Append(json[cont]);
+                    // if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
+                    temp.Append(json[cont]);
                 }
 
 
@@ -400,7 +466,7 @@ namespace JsonMaker
 
                 if (!quotes)
                 {
-                    if (!"\r\n\t ".Contains(att))
+                    if (!"\r\n\t\0 ".Contains(att))
                         result.Append(att);
                 }
                 else
@@ -455,7 +521,12 @@ namespace JsonMaker
 
         #endregion
 
-
+        /// <summary>
+        /// Get a json property as string
+        /// </summary>
+        /// <param name="name">Object name of the property</param>
+        /// <param name="defaultValue">Value to be returned when the property is not found</param>
+        /// <returns></returns>
         public string getString(string name, string defaultValue = "")
         {
             string result = this.get(name);
@@ -466,13 +537,18 @@ namespace JsonMaker
 
             result = __unescapeString(result);
 
-            if (result != "")
+            if ((result != "") && (result != "null"))
                 return result;
             else
                 return defaultValue;
 
         }
 
+        /// <summary>
+        /// Set or create a property as string
+        /// </summary>
+        /// <param name="name">The property object name </param>
+        /// <param name="value">The value</param>
         public void setString(string name, string value)
         {
             if (value == null)
@@ -481,6 +557,12 @@ namespace JsonMaker
             this.set(name, '"' + value + '"');
         }
 
+        /// <summary>
+        /// Get a json property as int
+        /// </summary>
+        /// <param name="name">Object name of the property</param>
+        /// <param name="defaultValue">Value to be returned when the property is not found</param>
+        /// <returns></returns>
         public int getInt(string name, int defaultValue = 0)
         {
             string temp = getOnly(this.get(name), "0123456789-");
@@ -489,11 +571,22 @@ namespace JsonMaker
             else return defaultValue;
         }
 
+        /// <summary>
+        /// Set or create a property as int
+        /// </summary>
+        /// <param name="name">The property object name </param>
+        /// <param name="value">The value</param>
         public void setInt(string name, int value)
         {
             this.set(name, value.ToString());
         }
 
+        /// <summary>
+        /// Get a json property as Int64
+        /// </summary>
+        /// <param name="name">Object name of the property</param>
+        /// <param name="defaultValue">Value to be returned when the property is not found</param>
+        /// <returns></returns>
         public Int64 getInt64(string name, Int64 defaultValue = 0)
         {
             string temp = getOnly(this.get(name), "0123456789-");
@@ -502,11 +595,22 @@ namespace JsonMaker
             else return defaultValue;
         }
 
+        /// <summary>
+        /// Set or create a property as int64
+        /// </summary>
+        /// <param name="name">The property object name </param>
+        /// <param name="value">The value</param>
         public void setInt64(string name, Int64 value)
         {
             this.set(name, value.ToString());
         }
 
+        /// <summary>
+        /// Get a json property as boolean
+        /// </summary>
+        /// <param name="name">Object name of the property</param>
+        /// <param name="defaultValue">Value to be returned when the property is not found</param>
+        /// <returns></returns>
         public bool getBoolean(string name, bool defaultValue = false)
         {
             string temp = this.get(name);
@@ -520,11 +624,22 @@ namespace JsonMaker
             else return defaultValue;
         }
 
+        /// <summary>
+        /// Set or create a property as boolean
+        /// </summary>
+        /// <param name="name">The property object name </param>
+        /// <param name="value">The value</param>
         public void setBoolean(string name, bool value)
         {
             this.set(name, value.ToString().ToLower());
         }
 
+        /// <summary>
+        /// Get a json property as DateTime
+        /// </summary>
+        /// <param name="name">Object name of the property</param>
+        /// <param name="defaultValue">Value to be returned when the property is not found</param>
+        /// <returns></returns>
         public DateTime getDateTime(string name)
         {
             string temp = getOnly(this.get(name), "0123456789/: TU");
@@ -535,11 +650,22 @@ namespace JsonMaker
 
         }
 
+        /// <summary>
+        /// Set or create a property as DateTime. To set a custom DateTime format, please use setString
+        /// </summary>
+        /// <param name="name">The property object name </param>
+        /// <param name="value">The value</param>
         public void setDateTime(string name, DateTime value)
         {
             this.set(name, '"' + value.ToString() + '"');
         }
 
+        /// <summary>
+        /// Get a json property as double. To get a custom DateTime, please use getString
+        /// </summary>
+        /// <param name="name">Object name of the property</param>
+        /// <param name="defaultValue">Value to be returned when the property is not found</param>
+        /// <returns></returns>
         public double getDouble(string name, double defaultValue = 0)
         {
             string temp = getOnly(this.get(name).Replace('.', ','), "0123456789-,");
@@ -548,9 +674,28 @@ namespace JsonMaker
             else return defaultValue;
         }
 
+        /// <summary>
+        /// Set or create a property as Double
+        /// </summary>
+        /// <param name="name">The property object name </param>
+        /// <param name="value">The value</param>
         public void setDouble(string name, double value)
         {
             this.set(name, value.ToString().Replace(',', '.'));
+        }
+        
+        /// <summary>
+        /// Return the childs count of an object (like arrays or objects)
+        /// </summary>
+        /// <param name="objectName">The name of the object</param>
+        /// <returns></returns>
+        public int getArrayLength(string objectName = "")
+        {
+            var finded = this.find(objectName, false, this.root);
+            
+            if (finded != null)
+                return finded.__getChilds().Count();
+            return 0;
         }
 
         private string getOnly(string text, string chars)
@@ -597,6 +742,11 @@ namespace JsonMaker
                 nValue = nValue + data[cont];
 
             return nValue;
+        }
+
+        public void Dispose()
+        {
+            this.clear();
         }
     }
 }
