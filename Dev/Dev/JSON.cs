@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace JsonMaker
 {
-    public class JSON: IDisposable
+    public class JSON : IDisposable
     {
 
         private JSONObject root = new JSONObject(null);
@@ -640,11 +640,14 @@ namespace JsonMaker
         /// <param name="name">Object name of the property</param>
         /// <param name="defaultValue">Value to be returned when the property is not found</param>
         /// <returns></returns>
-        public DateTime getDateTime(string name)
+        public DateTime getDateTime(string name, string format = "")
         {
-            string temp = getOnly(this.get(name), "0123456789/: TU");
+            string temp = getOnly(this.get(name), "0123456789/-: TU");
             if (temp != "")
-                return DateTime.Parse(temp);
+                if (format != "")
+                    return DateTime.ParseExact(temp, format, System.Globalization.CultureInfo.InvariantCulture);
+                else
+                    return DateTime.Parse(temp);
             else
                 return new DateTime(0);
 
@@ -655,9 +658,33 @@ namespace JsonMaker
         /// </summary>
         /// <param name="name">The property object name </param>
         /// <param name="value">The value</param>
-        public void setDateTime(string name, DateTime value)
+        public void setDateTime(string name, DateTime value, string format = "")
         {
-            this.set(name, '"' + value.ToString() + '"');
+            string newV = "";
+            if (format != "")
+                newV = value.ToString(format);
+            else
+                newV = value.ToString();
+            this.set(name, '"' + newV + '"');
+        }
+
+        public void setDateTime_UtcFormat(string name, DateTime value, TimeSpan offset)
+        {
+            if (offset.Equals(TimeSpan.MinValue))
+            {
+                offset = TimeZone.CurrentTimeZone.GetUtcOffset(DateTime.Now);
+            }
+            string timeZone = offset.ToString();
+            timeZone = timeZone.Remove(timeZone.LastIndexOf(':'));
+            if (timeZone[0] != '-')
+                timeZone = "+" + timeZone;
+
+            this.setDateTime(name, value, "yyyy-MM-ddTHH:mm:ss" + timeZone);
+        }
+
+        public void setDateTime_UtcFormat(string name, DateTime value)
+        {
+            setDateTime_UtcFormat(name, value, TimeSpan.MinValue);
         }
 
         /// <summary>
@@ -683,7 +710,7 @@ namespace JsonMaker
         {
             this.set(name, value.ToString().Replace(',', '.'));
         }
-        
+
         /// <summary>
         /// Return the childs count of an object (like arrays or objects)
         /// </summary>
@@ -692,7 +719,7 @@ namespace JsonMaker
         public int getArrayLength(string objectName = "")
         {
             var finded = this.find(objectName, false, this.root);
-            
+
             if (finded != null)
                 return finded.__getChilds().Count();
             return 0;
