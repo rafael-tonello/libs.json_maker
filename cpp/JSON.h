@@ -28,11 +28,11 @@ namespace JsonMaker{
             
             map<string, JSONObject*> childs;
             SOType type = SOType::Null;
-            string singleValue;
 
             string serializeSingleValue();
         
         public:
+            string singleValue;
             JSONObject *parent;
             JSONObject(JSONObject *pParent);
             void setChild(string name, JSONObject *child);
@@ -226,6 +226,8 @@ namespace JsonMaker{
             int getArrayLength(string objectName = "");
 
             void Dispose();
+
+            string ToFormatedJson();
     };
 
     string getOnly(string source, string allowed);

@@ -27,16 +27,21 @@ namespace JsonMaker{
         return subject;
     }
 
-    map<string, JSONObject*>::const_iterator getChildByIndex (map<string, JSONObject*> *maptosearch, int index){
+    map<string, JSONObject*>::const_iterator getChildByIndex (map<string, JSONObject*> *maptosearch, int index, bool *sucess){
         map<string, JSONObject*>::const_iterator end = (*maptosearch).end(); 
 
         int counter = 0;
         for (map<string, JSONObject*>::const_iterator it = (*maptosearch).begin(); it != end; ++it) {
-            counter++;
 
             if (counter == index)
+            {
+                *sucess = true;
                 return it;
+            }
+            counter++;
         }
+
+        *sucess = false;
     }
 
     // trim from start (in place)
@@ -172,6 +177,7 @@ namespace JsonMaker{
     string JSONObject::ToJson(bool quotesOnNames)
     {
         stringstream result;
+        bool sucess;
 
         if (this->childs.size() > 0)
         {
@@ -183,19 +189,23 @@ namespace JsonMaker{
 
             for (int cont = 0; cont < this->childs.size(); cont++)
             {
-                auto current = getChildByIndex(&(this->childs), cont);
-                if (array)
+                auto current = getChildByIndex(&(this->childs), cont, &sucess);
+                if (sucess)
                 {
-                    if (current->second != NULL)
-                        result << current->second->ToJson(quotesOnNames);
-                }
-                else
-                {
-                    if (quotesOnNames)
-                        result << '"' + current->first + "\":" + current->second->ToJson(quotesOnNames);
+                    if (array)
+                    {
+                        if ((current->second != NULL))
+                            result << current->second->ToJson(quotesOnNames);
+                    }
                     else
-                        result << current->first + ":" + current->second->ToJson(quotesOnNames);
+                    {
+                        if (quotesOnNames)
+                            result << '"' + current->first + "\":" + current->second->ToJson(quotesOnNames);
+                        else
+                            result << current->first + ":" + current->second->ToJson(quotesOnNames);
+                    }
                 }
+
 
                 if (cont < this->childs.size() - 1)
                     result << ',';
@@ -256,11 +266,21 @@ namespace JsonMaker{
         int temp = 0;
 
         int cont = 0;
+
+        bool sucess;
         while (cont < this->childs.size())
         {
-            auto curr = getChildByIndex(&(this->childs), cont);
-            if (getOnly(curr->first, "0123456789") != curr->first)
+            auto curr = getChildByIndex(&(this->childs), cont, &sucess);
+
+            if (!sucess)
+            {
                 return false;
+            }
+
+            if (getOnly(curr->first, "0123456789") != curr->first)
+            {
+                return false;
+            }
             cont++;
         }
         return true;
@@ -287,7 +307,7 @@ namespace JsonMaker{
         std::string childsNames = "";
         JSONObject *childOnParent;
 
-        if (objectName.find(".") > string::npos)
+        if (objectName.find(".") != string::npos)
         {
             currentName = objectName.substr(0, objectName.find("."));
             childsNames = objectName.substr(objectName.find(".") + 1);
@@ -296,7 +316,9 @@ namespace JsonMaker{
         if (currentParent->__getChilds()->find(currentName) == currentParent->__getChilds()->end())
         {
             if (autoCreateTree)
+            {
                 (*(currentParent->__getChilds()))[currentName] = new JSONObject(currentParent);
+            }
             else
                 return NULL;
         }
@@ -323,36 +345,40 @@ namespace JsonMaker{
             return;
         }
 
-        JSONObject temp = this->find(objectName, true, this->root);
+        JSONObject* temp = this->find(objectName, true, this->root);
+
 
         /*if (value[0] == '\"')
             value = value.Substring(1, value.Length - 2);*/
 
         //value = value.Replace("\"", "\\\"");
-
-        temp.setSingleValue(value);
+        temp->setSingleValue(value);
 
     }
 
     void JSON::del(JSONObject *node)
     {
         auto childs = node->__getChilds();
+        bool sucess;
         while (childs->size() > 0)
         {
-            del(getChildByIndex(childs, 0)->second);
+            auto toDel = getChildByIndex(childs, 0, &sucess);
+            if (sucess)
+                del(toDel->second);
         }
         childs->clear();
 
         auto parentNodes = node->parent->__getChilds();
         for (int cont = 0; cont < parentNodes->size(); cont++)
         {
-            if (getChildByIndex(parentNodes, cont)->second == node)
+            auto find = getChildByIndex(parentNodes, cont, &sucess);
+            if (sucess && find->second == node)
             {
                 //if parent is an array, pull the elements forward backwards
                 if (node->parent->isArray())
                 {
                     for (int cont2 = cont; cont2 < parentNodes->size() - 1; cont2++)
-                        (*parentNodes)[getChildByIndex(parentNodes, cont2)->first] = (*parentNodes)[getChildByIndex(parentNodes, cont2 + 1)->first];
+                        (*parentNodes)[getChildByIndex(parentNodes, cont2, &sucess)->first] = (*parentNodes)[getChildByIndex(parentNodes, cont2 + 1, &sucess)->first];
 
                     parentNodes->erase(parentNodes->rend()->first);
                 }
@@ -376,14 +402,15 @@ namespace JsonMaker{
         string parentName = "";
 
         vector<string> childsNames;
+        bool sucess;
 
         for (int cont = 0; cont < currentItem->__getChilds()->size(); cont++)
         {
 
-            childsNames = getObjectsNames(getChildByIndex(currentItem->__getChilds(), cont)->second);
+            childsNames = getObjectsNames(getChildByIndex(currentItem->__getChilds(), cont, &sucess)->second);
 
 
-            parentName = getChildByIndex(currentItem->__getChilds(), cont)->first;
+            parentName = getChildByIndex(currentItem->__getChilds(), cont, &sucess)->first;
             //adiciona os filhos ao resultado
             //verifica se o nome atual atende ao filtro
             for (const auto& att : childsNames)
@@ -394,7 +421,7 @@ namespace JsonMaker{
 
                 retorno.push_back(nAtt);
             }
-            retorno.push_back(getChildByIndex(currentItem->__getChilds(), cont)->first);
+            retorno.push_back(getChildByIndex(currentItem->__getChilds(), cont, &sucess)->first);
         }
         return retorno;
 
@@ -403,13 +430,14 @@ namespace JsonMaker{
     vector<string> JSON::getChildsNames(JSONObject *currentItem)
     {
         vector<string> retorno;
+        bool sucess;
 
         if (currentItem == NULL)
             currentItem = this->root;
 
         for (int cont = 0; cont < currentItem->__getChilds()->size(); cont++)
         {
-            retorno.push_back(getChildByIndex(currentItem->__getChilds(), cont)->first);
+            retorno.push_back(getChildByIndex(currentItem->__getChilds(), cont, &sucess)->first);
         }
         return retorno;
     }
@@ -549,12 +577,13 @@ namespace JsonMaker{
     void JSON::clearChilds(string objectName)
     {
         JSONObject *temp = this->find(objectName, false, this->root);
+        bool sucess;
         if (temp != NULL)
         {
             auto childs = temp->__getChilds();
             while (childs->size() > 0)
             {
-                del(getChildByIndex(childs, 0)->second);
+                del(getChildByIndex(childs, 0, &sucess)->second);
             }
         }
     }
@@ -593,7 +622,7 @@ namespace JsonMaker{
     /// <returns></returns>
     string JSON::ToJson(bool quotesOnNames)
     {
-        std::string result = root->ToJson(quotesOnNames);
+        std::string result = this->root->ToJson(quotesOnNames);
         return result;
     }
 
@@ -645,7 +674,7 @@ namespace JsonMaker{
         }
         else
         {
-            auto finded = this->find(objectName, false, this->root);
+            JSONObject* finded = this->find(objectName, false, this->root);
             vector<string> retorno;
             if (finded != NULL)
                 retorno = this->getObjectsNames(finded);
@@ -668,7 +697,7 @@ namespace JsonMaker{
         }
         else
         {
-            auto finded = this->find(objectName, false, this->root);
+            JSONObject* finded = this->find(objectName, false, this->root);
             vector<string> retorno;
             if (finded != NULL)
                 retorno = this->getChildsNames(finded);
@@ -795,11 +824,14 @@ namespace JsonMaker{
     void JSON::setString(string name, string value)
     {
 
+
+
         value = ReplaceString(value, "\\", "\\\\");
         value = ReplaceString(value, "\"", "\\\"");
         value = ReplaceString(value, "\r", "\\r");
         value = ReplaceString(value, "\n", "\\n");
         value = ReplaceString(value, "\t", "\\t");
+
         this->set(name, '"' + value + '"');
     }
 
@@ -916,7 +948,7 @@ namespace JsonMaker{
     /// <returns></returns>
     int JSON::getArrayLength(string objectName)
     {
-        auto finded = this->find(objectName, false, this->root);
+        JSONObject* finded = this->find(objectName, false, this->root);
 
         if (finded != NULL)
             return finded->__getChilds()->size();
@@ -926,5 +958,44 @@ namespace JsonMaker{
     void JSON::Dispose()
     {
         this->clear();
+    }
+
+    string JSON::ToFormatedJson()
+    {
+        string inJson = this->ToJson();
+
+        stringstream s;
+        int level = 0;
+        char oldC = '\0';
+        for (const auto& c : inJson)
+        {
+            if ((c == '}') || (c == ']'))
+            {
+                level--;
+                s << "\r\n";
+                oldC = '\n';
+            }
+
+            if (oldC == '\n')
+            {
+                for (int a = 0; a < level ; a++)
+                    s << "    ";
+            }
+
+
+            
+            s << c;
+            oldC = c;
+            
+            if ((c == '{') || (c == '['))
+            {
+
+                level++;
+                s << "\r\n";
+                oldC = '\n';
+            }
+        }
+
+        return s.str();
     }
 }

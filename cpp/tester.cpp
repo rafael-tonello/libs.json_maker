@@ -7,9 +7,18 @@ using namespace JsonMaker;
 int main()
 {
     JSON *js = new JSON();
-    js->setString("mas.em.que.legal", "heheheh");
+    js->setString("mas.em.0", "heheheh");
+    js->setString("mas.em.0", "huhu");
+    js->setString("mas.em.1", "suahsuahsuhas");
 
     cout << js->ToJson();
+
+
+    cout << endl;
+
+    cout << js->ToFormatedJson();
+
+    cout << endl << flush;
 
 
 
