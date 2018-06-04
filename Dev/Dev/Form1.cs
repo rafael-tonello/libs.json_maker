@@ -21,13 +21,14 @@ namespace Dev
         {
             JsonMaker.JSON jm = new JsonMaker.JSON();
             //jm.add("pai.filho1", "valor do filho1");
+            bool format = true;
 
             jm.set("pai", "{f1:[{f2:\"f3\"}, \"f4\"]}");
-            MessageBox.Show(jm.get("pai"));
-            MessageBox.Show(jm.get("pai.f1"));
-            MessageBox.Show(jm.get("pai.f1[0]"));
-            MessageBox.Show(jm.get("pai.f1[1]"));
-            MessageBox.Show(jm.get("pai.f1[0].f2"));
+            MessageBox.Show(jm.get("pai", format));
+            MessageBox.Show(jm.get("pai.f1", format));
+            MessageBox.Show(jm.get("pai.f1[0]", format));
+            MessageBox.Show(jm.get("pai.f1[1]", format));
+            MessageBox.Show(jm.get("pai.f1[0].f2", format));
             MessageBox.Show(jm.ToJson());
 
             jm.set("pai.filho1[0]", "valor do filho1.1");
@@ -39,16 +40,16 @@ namespace Dev
             jm.set("pai.filho3.filho3_1", "valor do filho3.1");
             jm.set("pai.filho3.filho3_2", "valor do filho3.2");
 
-            MessageBox.Show(jm.get("pai"));
-            MessageBox.Show(jm.get("pai.filho1"));
-            MessageBox.Show(jm.get("pai.filho1[0]"));
-            MessageBox.Show(jm.get("pai.filho1[1]"));
-            MessageBox.Show(jm.get("pai.filho2"));
-            MessageBox.Show(jm.get("pai.filho3"));
-            MessageBox.Show(jm.get("pai.filho3.filho3_1"));
-            MessageBox.Show(jm.get("pai.filho3.filho3_2"));
-            MessageBox.Show(jm.get("pai.filho1.filho1[2]"));
-            MessageBox.Show(jm.ToJson());
+            MessageBox.Show(jm.get("pai", format));
+            MessageBox.Show(jm.get("pai.filho1", format));
+            MessageBox.Show(jm.get("pai.filho1[0]", format));
+            MessageBox.Show(jm.get("pai.filho1[1]", format));
+            MessageBox.Show(jm.get("pai.filho2", format));
+            MessageBox.Show(jm.get("pai.filho3", format));
+            MessageBox.Show(jm.get("pai.filho3.filho3_1", format));
+            MessageBox.Show(jm.get("pai.filho3.filho3_2", format));
+            MessageBox.Show(jm.get("pai.filho1.filho1[2]", format));
+            MessageBox.Show(jm.ToJson(format));
 
 
 

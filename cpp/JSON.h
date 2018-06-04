@@ -39,7 +39,7 @@ namespace JsonMaker{
             void del(string name);
             JSONObject* get(string name);
             void clear();
-            string ToJson(bool quotesOnNames);
+            string ToJson(bool quotesOnNames, bool format = false, int level = 0);
             void setSingleValue(string value);
             bool isArray();
             map<string, JSONObject*> *__getChilds();
@@ -102,7 +102,7 @@ namespace JsonMaker{
             /// </summary>
             /// <param name="quotesOnNames">User '"' in name of objects</param>
             /// <returns></returns>
-            string ToJson(bool quotesOnNames = true);
+            string ToJson(bool format = false);
 
             string ToString();
 
@@ -119,7 +119,7 @@ namespace JsonMaker{
             /// <param name="objectName">The object name</param>
             /// <param name="quotesOnNames">User '"' in names</param>
             /// <returns></returns>
-            string get(string objectName, bool quotesOnNames = true);
+            string get(string objectName, bool format = false, bool quotesOnNames = true);
 
             /// <summary>
             /// Return all names of the json three of an object
@@ -226,8 +226,6 @@ namespace JsonMaker{
             int getArrayLength(string objectName = "");
 
             void Dispose();
-
-            string ToFormatedJson();
     };
 
     string getOnly(string source, string allowed);

@@ -175,10 +175,10 @@ namespace JsonMaker
         /// </summary>
         /// <param name="quotesOnNames">User '"' in name of objects</param>
         /// <returns></returns>
-        public string ToJson(bool quotesOnNames = true)
+        public string ToJson(bool format = true)
         {
             interfaceSemaphore.WaitOne();
-            string result = root.ToJson(quotesOnNames);
+            string result = root.ToJson(true, format);
             interfaceSemaphore.Release();
             return result;
         }
@@ -207,13 +207,13 @@ namespace JsonMaker
         /// <param name="objectName">The object name</param>
         /// <param name="quotesOnNames">User '"' in names</param>
         /// <returns></returns>
-        public string get(string objectName, bool quotesOnNames = true)
+        public string get(string objectName, bool format = false, bool quotesOnNames = true)
         {
             interfaceSemaphore.WaitOne();
             JSONObject temp = this.find(objectName, false, this.root);
             interfaceSemaphore.Release();
             if (temp != null)
-                return temp.ToJson(quotesOnNames);
+                return temp.ToJson(quotesOnNames, format);
             else
                 return "null";
 

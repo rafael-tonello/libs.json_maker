@@ -11,12 +11,8 @@ int main()
     js->setString("mas.em.0", "huhu");
     js->setString("mas.em.1", "suahsuahsuhas");
 
-    cout << js->ToJson();
+    cout << js->ToJson(true);
 
-
-    cout << endl;
-
-    cout << js->ToFormatedJson();
 
     cout << endl << flush;
 

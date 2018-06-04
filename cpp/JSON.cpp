@@ -174,7 +174,7 @@ namespace JsonMaker{
         this->childs.clear();
     }
 
-    string JSONObject::ToJson(bool quotesOnNames)
+    string JSONObject::ToJson(bool quotesOnNames, bool format, int level)
     {
         stringstream result;
         bool sucess;
@@ -187,34 +187,60 @@ namespace JsonMaker{
             else
                 result << "{";
 
+            
+            if (format)
+                result << "\r\n";
+
+            level++;
+
+
+            
+
             for (int cont = 0; cont < this->childs.size(); cont++)
             {
+                if (format)
+                    for (int a = 0; a < level; a++)
+                        result << "    ";
+
                 auto current = getChildByIndex(&(this->childs), cont, &sucess);
                 if (sucess)
                 {
                     if (array)
                     {
                         if ((current->second != NULL))
-                            result << current->second->ToJson(quotesOnNames);
+                            result << current->second->ToJson(quotesOnNames, format, level);
                     }
                     else
                     {
                         if (quotesOnNames)
-                            result << '"' + current->first + "\":" + current->second->ToJson(quotesOnNames);
+                            result << '"' + current->first + "\":" + current->second->ToJson(quotesOnNames, format, level);
                         else
-                            result << current->first + ":" + current->second->ToJson(quotesOnNames);
+                            result << current->first + ":" + current->second->ToJson(quotesOnNames, format, level);
                     }
                 }
 
 
                 if (cont < this->childs.size() - 1)
-                    result << ',';
+                {
+                    result << ",";
+                    if (format)
+                        result << "\r\n";
+                }
+            }
+
+            level --;
+            if (format)
+            {
+                result << "\r\n";
+                for (int a = 0; a < level; a++)
+                    result << "    ";
             }
 
             if (array)
                 result << "]";
             else
                 result << "}";
+            
 
             return result.str();
         }
@@ -620,9 +646,9 @@ namespace JsonMaker{
     /// </summary>
     /// <param name="quotesOnNames">User '"' in name of objects</param>
     /// <returns></returns>
-    string JSON::ToJson(bool quotesOnNames)
+    string JSON::ToJson(bool format)
     {
-        std::string result = this->root->ToJson(quotesOnNames);
+        std::string result = this->root->ToJson(true, format);
         return result;
     }
 
@@ -648,11 +674,11 @@ namespace JsonMaker{
     /// <param name="objectName">The object name</param>
     /// <param name="quotesOnNames">User '"' in names</param>
     /// <returns></returns>
-    string JSON::get(string objectName, bool quotesOnNames)
+    string JSON::get(string objectName, bool format, bool quotesOnNames)
     {
         JSONObject *temp = this->find(objectName, false, this->root);
         if (temp != NULL)
-            return temp->ToJson(quotesOnNames);
+            return temp->ToJson(quotesOnNames, format);
         else
             return "null";
 
@@ -958,44 +984,5 @@ namespace JsonMaker{
     void JSON::Dispose()
     {
         this->clear();
-    }
-
-    string JSON::ToFormatedJson()
-    {
-        string inJson = this->ToJson();
-
-        stringstream s;
-        int level = 0;
-        char oldC = '\0';
-        for (const auto& c : inJson)
-        {
-            if ((c == '}') || (c == ']'))
-            {
-                level--;
-                s << "\r\n";
-                oldC = '\n';
-            }
-
-            if (oldC == '\n')
-            {
-                for (int a = 0; a < level ; a++)
-                    s << "    ";
-            }
-
-
-            
-            s << c;
-            oldC = c;
-            
-            if ((c == '{') || (c == '['))
-            {
-
-                level++;
-                s << "\r\n";
-                oldC = '\n';
-            }
-        }
-
-        return s.str();
     }
 }

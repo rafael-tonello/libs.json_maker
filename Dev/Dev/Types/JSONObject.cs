@@ -42,7 +42,7 @@ class JSONObject
         childs.Clear();
     }
 
-    public virtual string ToJson(bool quotesOnNames)
+    public virtual string ToJson(bool quotesOnNames, bool format = false, int level = 0)
     {
         StringBuilder result = new StringBuilder();
         if (this.childs.Count > 0)
@@ -52,24 +52,47 @@ class JSONObject
                 result.Append("[");
             else
                 result.Append("{");
+
+            if (format)
+                result.Append("\r\n");
+
+            level++;
+
             for (int cont = 0; cont < this.childs.Count; cont++)
             {
+                if (format)
+                {
+                    for (int a = 0; a < level; a++)
+                        result.Append("    ");
+                }
+
                 var current = this.childs.ElementAt(cont);
                 if (array)
-                    result.Append(current.Value.ToJson(quotesOnNames));
+                    result.Append(current.Value.ToJson(quotesOnNames, format, level));
                 else
                 {
                     if (quotesOnNames)
-                        result.Append('"' + current.Key + "\":" + current.Value.ToJson(quotesOnNames));
+                        result.Append('"' + current.Key + "\":" + current.Value.ToJson(quotesOnNames, format, level));
                     else
-                        result.Append(current.Key + ":" + current.Value.ToJson(quotesOnNames));
+                        result.Append(current.Key + ":" + current.Value.ToJson(quotesOnNames, format, level));
                 }
 
                 if (cont < this.childs.Count - 1)
                 {
                     result.Append(',');
+                    if (format)
+                        result.Append("\r\n");
                 }
             }
+
+            level--;
+            if (format)
+            {
+                result.Append("\r\n");
+                for (int a = 0; a < level; a++)
+                    result.Append("    ");
+            }
+
             if (array)
                 result.Append("]");
             else
