@@ -382,7 +382,7 @@ namespace JsonMaker{
         }
     }
 
-    vector<string> JSON::getObjectsNames(JSONObject *currentItem = NULL)
+    vector<string> JSON::getObjectsNames(JSONObject *currentItem)
     {
         vector<string> retorno;
 
@@ -417,7 +417,7 @@ namespace JsonMaker{
 
     }
 
-    vector<string> JSON::getChildsNames(JSONObject *currentItem = NULL)
+    vector<string> JSON::getChildsNames(JSONObject *currentItem)
     {
         vector<string> retorno;
 
@@ -515,7 +515,7 @@ namespace JsonMaker{
         return result.str();
     }
 
-    bool JSON::isAJson(string json, bool objects = true, bool arrays = true)
+    bool JSON::isAJson(string json, bool objects, bool arrays)
     {
         bool quotes = false;
 
@@ -608,7 +608,7 @@ namespace JsonMaker{
     /// </summary>
     /// <param name="quotesOnNames">User '"' in name of objects</param>
     /// <returns></returns>
-    string JSON::ToJson(bool quotesOnNames = true)
+    string JSON::ToJson(bool quotesOnNames)
     {
         std::string result = root->ToJson(quotesOnNames);
         return result;
@@ -636,7 +636,7 @@ namespace JsonMaker{
     /// <param name="objectName">The object name</param>
     /// <param name="quotesOnNames">User '"' in names</param>
     /// <returns></returns>
-    string JSON::get(string objectName, bool quotesOnNames = true)
+    string JSON::get(string objectName, bool quotesOnNames)
     {
         JSONObject *temp = this->find(objectName, false, this->root);
         if (temp != NULL)
@@ -653,7 +653,7 @@ namespace JsonMaker{
     /// </summary>
     /// <param name="objectName">The name of object</param>
     /// <returns></returns>
-    vector<string> JSON::getObjectsNames(string objectName = "")
+    vector<string> JSON::getObjectsNames(string objectName)
     {
         if (objectName == "")
         {
@@ -676,7 +676,7 @@ namespace JsonMaker{
     /// </summary>
     /// <param name="objectName">The name of object</param>
     /// <returns></returns>
-    vector<string> JSON::getChildsNames(string objectName = "")
+    vector<string> JSON::getChildsNames(string objectName)
     {
         if (objectName == "")
         {
@@ -706,7 +706,7 @@ namespace JsonMaker{
 
     }
 
-    void JSON::parseJson(string json, string parentName = "")
+    void JSON::parseJson(string json, string parentName)
     {
         //limpa o json, removendo coisas desnecessárias como espaços em branco e tabs
         json = clearJsonString(json);
@@ -787,7 +787,7 @@ namespace JsonMaker{
     /// <param name="name">Object name of the property</param>
     /// <param name="defaultValue">Value to be returned when the property is not found</param>
     /// <returns></returns>
-    string JSON::getString(string name, string defaultValue = "")
+    string JSON::getString(string name, string defaultValue)
     {
         string result = this->get(name);
         if ((result.size() > 0) && (result[0] == '"'))
@@ -826,7 +826,7 @@ namespace JsonMaker{
     /// <param name="name">Object name of the property</param>
     /// <param name="defaultValue">Value to be returned when the property is not found</param>
     /// <returns></returns>
-    int JSON::getInt(string name, int defaultValue = 0)
+    int JSON::getInt(string name, int defaultValue)
     {
         string temp = getOnly(this->get(name), "0123456789-");
         if (temp != "")
@@ -850,7 +850,7 @@ namespace JsonMaker{
     /// <param name="name">Object name of the property</param>
     /// <param name="defaultValue">Value to be returned when the property is not found</param>
     /// <returns></returns>
-    long JSON::getLong(string name, long defaultValue = 0)
+    long JSON::getLong(string name, long defaultValue)
     {
         string temp = getOnly(this->get(name), "0123456789-");
         if (temp != "")
@@ -874,7 +874,7 @@ namespace JsonMaker{
     /// <param name="name">Object name of the property</param>
     /// <param name="defaultValue">Value to be returned when the property is not found</param>
     /// <returns></returns>
-    bool JSON::getBoolean(string name, bool defaultValue = false)
+    bool JSON::getBoolean(string name, bool defaultValue)
     {
         std::locale loc;
         string temp = this->get(name);
@@ -905,7 +905,7 @@ namespace JsonMaker{
     /// <param name="name">Object name of the property</param>
     /// <param name="defaultValue">Value to be returned when the property is not found</param>
     /// <returns></returns>
-    double JSON::getDouble(string name, double defaultValue = 0)
+    double JSON::getDouble(string name, double defaultValue)
     {
         //string temp = getOnly(this->get(name).Replace('.', ','), "0123456789-,");
         string temp = getOnly(this->get(name), "0123456789-,.");
@@ -931,7 +931,7 @@ namespace JsonMaker{
     /// </summary>
     /// <param name="objectName">The name of the object</param>
     /// <returns></returns>
-    int JSON::getArrayLength(string objectName = "")
+    int JSON::getArrayLength(string objectName)
     {
         auto finded = this->find(objectName, false, this->root);
 
