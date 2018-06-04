@@ -171,63 +171,46 @@ namespace JsonMaker{
 
     string JSONObject::ToJson(bool quotesOnNames)
     {
-        cout << "1" << endl << flush;
         stringstream result;
-
-        cout << " o tamanho do childs "<<flush;
-        cout << " é " << this->childs.size() << endl<< flush;
 
         if (this->childs.size() > 0)
         {
-            cout << "2" << endl << flush;
             bool array = this->isArray();
             if (array)
                 result << "[";
             else
                 result << "{";
 
-            cout << "3" << endl << flush;
             for (int cont = 0; cont < this->childs.size(); cont++)
             {
-                cout << "4" << endl << flush;
                 auto current = getChildByIndex(&(this->childs), cont);
-                cout << "4.1" << endl << flush;
                 if (array)
                 {
-                    cout << "4.2" << endl << flush;
                     if (current->second != NULL)
                         result << current->second->ToJson(quotesOnNames);
-                    cout << "4.3" << endl << flush;
                 }
                 else
                 {
-                    cout << "4.4" << endl << flush;
                     if (quotesOnNames)
                         result << '"' + current->first + "\":" + current->second->ToJson(quotesOnNames);
                     else
                         result << current->first + ":" + current->second->ToJson(quotesOnNames);
-                    cout << "4.5" << endl << flush;
                 }
 
                 if (cont < this->childs.size() - 1)
                     result << ',';
-                cout << "5" << endl << flush;
             }
 
-            cout << "6" << endl << flush;
             if (array)
                 result << "]";
             else
                 result << "}";
-            cout << "7" << endl << flush;
 
             return result.str();
         }
         else
         {
-            cout << "8" << endl << flush;
             return serializeSingleValue();
-            cout << "9" << endl << flush;
         }
     }
 
