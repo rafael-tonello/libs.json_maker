@@ -170,7 +170,7 @@ namespace JsonMaker{
     {
         for (const auto& curr : this->childs) {
             curr.second->clear();
-            delete[] curr->second;
+            //delete[] curr->second;
         }
         this->singleValue.clear();
         this->childs.clear();
