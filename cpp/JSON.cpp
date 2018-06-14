@@ -119,11 +119,16 @@ namespace JsonMaker{
 
     string JSONObject::serializeSingleValue()
     {
-        std::locale loc;
         if (this->type == SOType::Null)
             return "null";
         else if (this->type == SOType::Boolean)
-            return ((std::tolower(this->singleValue, loc) == "true") || (this->singleValue == "1")) ? "true" : "false";
+		{
+			string temp = this->singleValue;
+			std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+			
+            temp =  ((temp == "true") || (temp == "1")) ? "true" : "false";
+			return temp;
+		}
         else if (this->type == SOType::String)
         {
             if ((this->singleValue.size() > 0) && (this->singleValue[0] != '"'))
@@ -180,7 +185,7 @@ namespace JsonMaker{
     {
         stringstream result;
         bool sucess;
-
+		
         if (this->childs.size() > 0)
         {
             bool array = this->isArray();
@@ -203,7 +208,7 @@ namespace JsonMaker{
                 if (format)
                     for (int a = 0; a < level; a++)
                         result << "    ";
-
+				
                 auto current = getChildByIndex(&(this->childs), cont, &sucess);
                 if (sucess)
                 {
@@ -220,7 +225,6 @@ namespace JsonMaker{
                             result << current->first + ":" + current->second->ToJson(quotesOnNames, format, level);
                     }
                 }
-
 
                 if (cont < this->childs.size() - 1)
                 {
@@ -266,8 +270,11 @@ namespace JsonMaker{
         {
             //try as boolean
             this->singleValue = value;
+			
+			string temp = this->singleValue;
+			std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
 
-            if ((value == "true") || (value == "false"))
+            if ((temp == "true") || (temp == "false"))
                 this->type = SOType::Boolean;
             else
             {
@@ -286,6 +293,8 @@ namespace JsonMaker{
                     }
                 }
             }
+			
+			temp = "";
         }
     }
 
@@ -484,13 +493,14 @@ namespace JsonMaker{
                 if ((open == 0) && (!quotes))
                 {
                     fields.push_back(temp.str());
-                    temp.clear();
+                    //clear the stringstream
+					temp.str(std::string());
                 }
                 else
                     //if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
                     temp << json[cont];
             }
-
+			
             else
             {
                 if (!quotes)
@@ -519,7 +529,7 @@ namespace JsonMaker{
         int size = temp.tellg();
         if (size > 0)
             fields.push_back(temp.str());
-
+			
         return fields;
 
     }
@@ -746,6 +756,7 @@ namespace JsonMaker{
 
     }
 
+	
     void JSON::parseJson(string json, string parentName)
     {
         //limpa o json, removendo coisas desnecessárias como espaços em branco e tabs
@@ -919,11 +930,11 @@ namespace JsonMaker{
     /// <returns></returns>
     bool JSON::getBoolean(string name, bool defaultValue)
     {
-        std::locale loc;
         string temp = this->get(name);
         if (temp != "")
         {
-            if (std::tolower(temp, loc) == "true")
+			std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+            if (temp == "true")
                 return true;
             else
                 return false;
@@ -938,8 +949,9 @@ namespace JsonMaker{
     /// <param name="value">The value</param>
     void JSON::setBoolean(string name, bool value)
     {
-        std::locale loc;
-        this->set(name, std::tolower(std::to_string(value), loc));
+		std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+		
+        this->set(name, name);
     }
 
     /// <summary>
@@ -987,4 +999,5 @@ namespace JsonMaker{
     {
         this->clear();
     }
+	
 }
