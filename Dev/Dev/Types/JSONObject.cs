@@ -2,13 +2,13 @@
 using System.Linq;
 using System.Text;
 
-class JSONObject
+public class JSONObject
 {
     protected Dictionary<string, JSONObject> childs = new Dictionary<string, JSONObject>();
     public JSONObject parent;
 
 
-    private enum SOType { Null, String, Int, Double, Boolean }
+    public enum SOType { Null, String, Int, Double, Boolean }
     private SOType type = SOType.Null;
     private string singleValue;
 
@@ -124,6 +124,11 @@ class JSONObject
             return this.singleValue;
 
 
+    }
+
+    public SOType getJSONType()
+    {
+        return this.type;
     }
 
     public void setSingleValue(string value)

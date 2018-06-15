@@ -17,14 +17,10 @@
 using namespace std;
 
 namespace JsonMaker{
-
-    
-
-
+	enum SOType { Null, String, Int, Double, Boolean };
     class JSONObject
     {
         protected:
-            enum SOType { Null, String, Int, Double, Boolean };
             
             map<string, JSONObject*> childs;
             SOType type = SOType::Null;
@@ -40,6 +36,7 @@ namespace JsonMaker{
             JSONObject* get(string name);
             void clear();
             string ToJson(bool quotesOnNames, bool format = false, int level = 0);
+			SOType getJSONType();
             void setSingleValue(string value);
             bool isArray();
             map<string, JSONObject*> *__getChilds();
@@ -142,7 +139,9 @@ namespace JsonMaker{
 
             void parseJson(string json, string parentName = "");
 
-            
+
+			SOType getJSONType(string objectName);
+			
             /// <summary>
             /// Get a json property as string
             /// </summary>

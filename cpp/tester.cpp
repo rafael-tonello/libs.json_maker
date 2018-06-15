@@ -1,3 +1,4 @@
+//compile with g++ -std=c++14 -o saida tester.cpp
 #include <iostream>
 #include <string>
 #include "JSON.h"

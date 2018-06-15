@@ -521,6 +521,19 @@ namespace JsonMaker
 
         #endregion
 
+        public JSONObject.SOType getJSONType(string objectName)
+        {
+            interfaceSemaphore.WaitOne();
+            JSONObject temp = this.find(objectName, false, this.root);
+            interfaceSemaphore.Release();
+            if (temp != null)
+            {
+                return temp.getJSONType();
+            }
+            else
+                return JSONObject.SOType.Null;
+        }
+
         /// <summary>
         /// Get a json property as string
         /// </summary>

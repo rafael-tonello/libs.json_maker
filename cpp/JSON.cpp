@@ -256,8 +256,11 @@ namespace JsonMaker{
         }
     }
 
-    
-
+	SOType JSONObject::getJSONType()
+    {
+        return this->type;
+    }
+	
     void JSONObject::setSingleValue(string value)
     {
         int sucess = 0;
@@ -830,6 +833,17 @@ namespace JsonMaker{
                 this->_set(tempName, toInsert);
         }
     }
+	
+	SOType JSON::getJSONType(string objectName)
+	{
+		JSONObject *temp = this->find(objectName, false, this->root);
+		if (temp != NULL)
+		{
+			return temp->getJSONType();
+		}
+		else
+			return SOType::Null;
+	}
 
     
     /// <summary>
