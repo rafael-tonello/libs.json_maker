@@ -286,14 +286,19 @@ namespace JsonMaker{
                     this->type = SOType::Int;
                 else
                 {
+					//try as datetime
+					if (getOnly(value, "0123456789:/-+TtZz") == value)
+						this->type = SOType::DateTime;
                     //try as double
-                    if (getOnly(value, "0123456789.") == value)
-                        this->type = SOType::Double;
-                    else
-                    {
-                        //is a string
-                        this->type = SOType::String;
-                    }
+                    else{
+						if (getOnly(value, "0123456789.") == value)
+							this->type = SOType::Double;
+						else
+						{
+							//is a string
+							this->type = SOType::String;
+						}
+					}
                 }
             }
 			

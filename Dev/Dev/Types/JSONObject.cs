@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -8,7 +9,7 @@ public class JSONObject
     public JSONObject parent;
 
 
-    public enum SOType { Null, String, Int, Double, Boolean }
+    public enum SOType { Null, String, DateTime, Int, Double, Boolean }
     private SOType type = SOType.Null;
     private string singleValue;
 
@@ -135,6 +136,7 @@ public class JSONObject
     {
         int sucess = 0;
         double sucess2 = 0;
+        DateTime sucess3;
 
         //trye as null
         if ((value == null) || (value == "null") || (value == ""))
@@ -156,6 +158,11 @@ public class JSONObject
                     //try as double
                     if (double.TryParse(value, out sucess2))
                         type = SOType.Double;
+                    else if ((value.Contains(':') && (DateTime.TryParse(value.Replace("\"", ""), out sucess3))))
+                    {
+                        type = SOType.DateTime;
+
+                    }
                     else
                     {
                         //is a string

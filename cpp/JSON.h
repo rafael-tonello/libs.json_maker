@@ -17,7 +17,7 @@
 using namespace std;
 
 namespace JsonMaker{
-	enum SOType { Null, String, Int, Double, Boolean };
+	enum SOType { Null, String, DateTime, Int, Double, Boolean };
     class JSONObject
     {
         protected:
