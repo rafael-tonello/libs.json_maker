@@ -49,7 +49,6 @@ namespace JsonMaker{
         private:
             JSONObject *root = new JSONObject(NULL);
             
-            void clear();
 
             
             JSONObject *find(string objectName, bool autoCreateTree, JSONObject *currentParent);
@@ -224,6 +223,7 @@ namespace JsonMaker{
             /// <returns></returns>
             int getArrayLength(string objectName = "");
 
+            void clear();
             void Dispose();
     };
 
