@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -788,6 +789,261 @@ namespace JsonMaker
         {
             this.clear();
         }
+
+
+        #region exclusive to CSharp (Uses reflection). Serializer and Unserializer for public properties
+        /// <summary>
+        /// Convert any object to JSON (JSonMaker) object. Only public properties with get; and set; will be converted (Example: string foo{get; set;} or string foo{get{return _foo;} set{_foo = value}}
+        /// </summary>
+        /// <param name="obj">The object to be serialized (converted to a JSON object)</param>
+        /// <returns>Returns an JSON object, with all properties the system coul find</returns>
+        public static JSON SerializeObject(Object obj)
+        {
+            JSON ret = new JSON();
+            ret.setString("Type", obj.GetType().ToString());
+
+            var teste = obj.GetType().GetMembers();
+
+            foreach (var prop in teste)
+            {
+                if (prop.MemberType == MemberTypes.Method)
+                {
+                    if (prop.Name.StartsWith("get_"))
+                    {
+                        string propName = prop.Name.Substring(prop.Name.IndexOf('_') + 1);
+
+                        //(MethodInfo)prop).
+                        try
+                        {
+                            object propValue = ((MethodInfo)prop).Invoke(obj, new object[] { });
+                            _addToJson(ret, propName, propValue);
+                        }
+                        catch (Exception e) { string a = e.Message; }
+
+                    }
+                }
+            }
+            return ret;
+        }
+
+        /// <summary>
+        /// This
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="rebuildChildren"></param>
+        public static object UnSerializeObject(JSON data, object destObject = null, bool rebuildChildren = true)
+        {
+
+            //reconstituite the original object
+            object result;
+            if (destObject != null)
+                result = destObject;
+            else
+                result = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(data.getString("Type"));
+
+            if (result == null)
+            {
+                string typestr = data.getString("Type");
+                //try restore primitive object (from dictionaries and lists)
+                if (typestr == "System.Boolean")
+                    return bool.Parse(data.getString("Value"));
+                else if (typestr == "System.Double")
+                    return double.Parse(data.getString("Value"));
+                else if (typestr == "System.Int")
+                    return int.Parse(data.getString("Value"));
+                else if (typestr.EndsWith("DateTime"))
+                    return DateTime.Parse(data.getString("Value"));
+                else if (typestr == "System.String")
+                    return data.getString("Value");
+                else
+                    //try to unserialize to an ExpandoObject
+                    return null;
+            }
+
+            var selfMethods = result.GetType().GetMembers();
+            //scrols the methods, looking for "set_"
+            foreach (var c in selfMethods)
+            {
+                if (c.Name.StartsWith("set_"))
+                {
+                    string propName = c.Name.Substring(c.Name.IndexOf('_') + 1);
+                    //looks in DATA to see if this contains a property named 'propName'
+                    if (data.contains(propName))
+                    {
+                        var JSType = data.getJSONType(propName);
+                        //checks if is a type
+                        if ((rebuildChildren) && (data.contains(propName + ".Type")))
+                        {
+                            string typeStr = data.getString(propName + ".Type");
+
+                            //check if the type is a List
+                            if (typeStr.Contains("System.Collections.Generic.List"))
+                            {
+                                //take the string type from JSON
+                                string listTypeString = typeStr.Substring(typeStr.IndexOf('[') + 1);
+                                listTypeString = listTypeString.Substring(0, listTypeString.IndexOf(']'));
+                                Type listItemsType = Type.GetType(listTypeString);
+
+
+                                //crate a new list, with the type scpecified in the JSON
+                                Type listType = typeof(List<>).MakeGenericType(listItemsType);
+                                object list = Activator.CreateInstance(listType);
+
+                                //add JSON items to the list
+                                int itemsCount = data.getArrayLength(propName + ".Items");
+                                for (int cItems = 0; cItems < itemsCount; cItems++)
+                                {
+                                    string kName = propName + ".Items[" + cItems + "]";
+                                    object currItem = UnSerializeObject(new JSON(data.get(kName)));
+
+                                    list.GetType().GetMethod("Add").Invoke(list, new object[] { currItem });
+                                    ((MethodInfo)c).Invoke(result, new object[] { list });
+                                }
+                            }
+                            //checks if the type is a dictionary
+                            else if (typeStr.Contains("System.Collections.Generic.Dictionary"))
+                            {
+                                //takes the types names (strings) of key and value from JSON
+                                string dicTypesString = typeStr.Substring(typeStr.IndexOf('[') + 1);
+                                dicTypesString = dicTypesString.Substring(0, dicTypesString.IndexOf(']'));
+                                string[] dicTypesStringsArray = dicTypesString.Split(',');
+                                Type dicKeyType = Type.GetType(dicTypesStringsArray[0]);
+                                Type dicValueType = Type.GetType(dicTypesStringsArray[1]);
+
+                                //create a new Dictionary, with the types specifieds in the JSON
+                                //crate a new list, with the type scpecified in the JSON
+                                Type dicType = typeof(Dictionary<,>).MakeGenericType(new Type[] { dicKeyType, dicValueType });
+                                object dictionary = Activator.CreateInstance(dicType);
+
+                                //add items to dictionary
+                                int itemsLength = data.getArrayLength(propName + ".Items");
+                                bool isPrimitive;
+                                for (int countItems = 0; countItems < itemsLength; countItems++)
+                                {
+                                    //takes the key from json
+                                    string temp = data.get(propName + ".Items[" + countItems + "].Key");
+                                    temp = data.getString(propName + ".Items[" + countItems + "].Key");
+
+                                    string currKeyData = data.getString(propName + ".Items[" + countItems + "].Key");
+                                    object currKey = UnSerializeObject(new JSON(currKeyData));
+                                    //takes the value from json
+                                    temp = data.get(propName + ".Items[" + countItems + "].Value");
+                                    temp = data.getString(propName + ".Items[" + countItems + "].Value");
+
+                                    string currValueData = data.getString(propName + ".Items[" + countItems + "].Value");
+                                    object currValue = UnSerializeObject(new JSON(currValueData));
+
+
+                                    //add the item to Dictionary
+                                    object Add = dictionary.GetType().GetMethod("Add").Invoke(dictionary, new object[] { currKey, currValue });
+
+                                }
+
+                            }
+                            else
+                            {
+
+                                var obj = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(typeStr);
+                                obj = UnSerializeObject(new JSON(data.get(propName)), obj, rebuildChildren);
+                                if (obj != null)
+                                {
+                                    ((MethodInfo)c).Invoke(result, new object[] { obj });
+                                }
+                            }
+
+                        }
+                        else
+                        {
+                            switch (JSType)
+                            {
+                                case JSONObject.SOType.Boolean:
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getBoolean(propName) });
+                                    break;
+                                case JSONObject.SOType.Double:
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getDouble(propName) });
+                                    break;
+                                case JSONObject.SOType.Int:
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getInt(propName) });
+                                    break;
+                                case JSONObject.SOType.DateTime:
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getDateTime(propName) });
+                                    break;
+                                case JSONObject.SOType.String:
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getString(propName) });
+                                    break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public static void _addToJson(JSON json, string propName, object propValue)
+        {
+            string typeStr = propValue.GetType().ToString();
+
+            //try add a primitive type
+            if (propValue is int)
+                json.setInt(propName, (int)propValue);
+            else if (propValue is double)
+                json.setDouble(propName, (double)propValue);
+            else if (propValue is bool)
+                json.setBoolean(propName, (bool)propValue);
+            else if (propValue is DateTime)
+                json.setDateTime_UtcFormat(propName, (DateTime)propValue);
+            else if (propValue is string)
+            {
+                json.setString(propName, (string)propValue);
+            }
+            //Add a dicionary
+            else if (typeStr.Contains("System.Collections.Generic.Dictionary"))
+            {
+                json.setString(propName + ".Type", propValue.GetType().ToString());
+                object keys = propValue.GetType().GetMethod("get_Keys").Invoke(propValue, new object[] { });
+                object enumerator = keys.GetType().GetMethod("GetEnumerator").Invoke(keys, new object[] { });
+                int count = 0;
+                while ((bool)enumerator.GetType().GetMethod("MoveNext").Invoke(enumerator, new object[] { }))
+                {
+                    object current = enumerator.GetType().GetMethod("get_Current").Invoke(enumerator, new object[] { });
+                    object ret3 = propValue.GetType().GetMethod("get_Item").Invoke(propValue, new object[] { current });
+
+                    _addToJson(json, propName + ".Items[" + count + "].Key.Type", current.GetType().ToString());
+                    _addToJson(json, propName + ".Items[" + count + "].Key.Value", current);
+
+                    _addToJson(json, propName + ".Items[" + count + "].Value.Type", ret3.GetType().ToString());
+                    _addToJson(json, propName + ".Items[" + count + "].Value.Value", ret3);
+
+                    count++;
+                }
+            }
+            //Add a Lists
+            else if (typeStr.Contains("System.Collections.Generic.List"))
+            {
+                json.setString(propName + ".Type", propValue.GetType().ToString());
+                int listCount = (int)propValue.GetType().GetMethod("get_Count").Invoke(propValue, new object[] { });
+                object teste = propValue.GetType().GetMethods();
+                object ret = propValue.GetType().GetMethod("GetEnumerator").Invoke(propValue, new object[] { });
+
+                for (int count = 0; count < listCount; count++)
+                {
+                    object ret3 = propValue.GetType().GetMethod("get_Item").Invoke(propValue, new object[] { count });
+
+                    _addToJson(json, propName + ".Items[" + count + "].Type", ret3.GetType().ToString());
+                    _addToJson(json, propName + ".Items[" + count + "].Value", ret3);
+                }
+            }
+            //Add a another type of object
+            else if (!typeStr.Contains("System.Collections.Generic"))
+            {
+                var serializedData = SerializeObject(propValue);
+                json.set(propName, serializedData);
+            }
+        }
+
+        #endregion
+
     }
 }
 
