@@ -722,6 +722,10 @@ namespace JsonMaker
         /// <param name="value">The value</param>
         public void setDouble(string name, double value)
         {
+            if (double.IsNaN(value))
+                value = 0f;
+            else if (double.IsInfinity(value))
+                value = 0f;
             this.set(name, value.ToString().Replace(',', '.'));
         }
 
@@ -820,10 +824,15 @@ namespace JsonMaker
                         string propName = prop.Name.Substring(prop.Name.IndexOf('_') + 1);
 
                         //(MethodInfo)prop).
+                        object propValue;
                         try
                         {
-                            object propValue = ((MethodInfo)prop).Invoke(obj, new object[] { });
-                            _addToJson(ret, propName, propValue, maxLevel, currLevel);
+                            if (((MethodInfo)prop).GetParameters().Length == 0)
+                            {
+                                propValue = ((MethodInfo)prop).Invoke(obj, new object[] { });
+                                if (propValue != null)
+                                    _addToJson(ret, propName, propValue, maxLevel, currLevel);
+                            }
                         }
                         catch (Exception e) { string a = e.Message; }
 
@@ -924,7 +933,6 @@ namespace JsonMaker
 
                                 //add items to dictionary
                                 int itemsLength = data.getArrayLength(propName + ".Items");
-                                bool isPrimitive;
                                 for (int countItems = 0; countItems < itemsLength; countItems++)
                                 {
                                     //takes the key from json
@@ -1006,9 +1014,17 @@ namespace JsonMaker
             }
             else if (typeStr.Contains("System.Collections.Generic.Dictionary"))
             {
+                if (propValue.GetType().GetMethod("get_Keys") == null) return;
+                if (propValue.GetType().GetMethod("get_Item") == null) return;
+
                 json.setString(propName + ".Type", propValue.GetType().ToString());
+
                 object keys = propValue.GetType().GetMethod("get_Keys").Invoke(propValue, new object[] { });
+                if (keys.GetType().GetMethod("GetEnumerator") == null) return;
+
                 object enumerator = keys.GetType().GetMethod("GetEnumerator").Invoke(keys, new object[] { });
+                if (enumerator.GetType().GetMethod("get_Current") == null) return;
+
                 int count = 0;
                 while ((bool)enumerator.GetType().GetMethod("MoveNext").Invoke(enumerator, new object[] { }))
                 {
@@ -1025,9 +1041,14 @@ namespace JsonMaker
             }
             else if (typeStr.Contains("System.Collections.Generic.List"))
             {
+                if (propValue.GetType().GetMethod("get_Item") == null) return;
+
                 json.setString(propName + ".Type", propValue.GetType().ToString());
+                if (propValue.GetType().GetMethod("get_Count") == null) return;
                 int listCount = (int)propValue.GetType().GetMethod("get_Count").Invoke(propValue, new object[] { });
+
                 object teste = propValue.GetType().GetMethods();
+                if (propValue.GetType().GetMethod("GetEnumerator") == null) return;
                 object ret = propValue.GetType().GetMethod("GetEnumerator").Invoke(propValue, new object[] { });
 
                 for (int count = 0; count < listCount; count++)
@@ -1044,7 +1065,10 @@ namespace JsonMaker
                 if (currLevel <= maxLevel)
                 {
                     var serializedData = _SerializeObject(propValue, maxLevel, currLevel + 1);
-                    json.set(propName, serializedData);
+                    if (serializedData != null)
+                        json.set(propName, serializedData);
+                    else
+                        json.set(propName, "null");
                 }
             }
             //json.setString(propName, propValue.ToString());*/
