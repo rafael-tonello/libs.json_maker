@@ -797,8 +797,15 @@ namespace JsonMaker
         /// </summary>
         /// <param name="obj">The object to be serialized (converted to a JSON object)</param>
         /// <returns>Returns an JSON object, with all properties the system coul find</returns>
-        public static JSON SerializeObject(Object obj)
+        public static JSON SerializeObject(Object obj, int maxLevel = int.MaxValue)
         {
+            return _SerializeObject(obj, maxLevel, 1);
+
+        }
+        private static JSON _SerializeObject(Object obj, int maxLevel = int.MaxValue, int currLevel = 1)
+        {
+            if (currLevel > maxLevel)
+                return null;
             JSON ret = new JSON();
             ret.setString("Type", obj.GetType().ToString());
 
@@ -816,7 +823,7 @@ namespace JsonMaker
                         try
                         {
                             object propValue = ((MethodInfo)prop).Invoke(obj, new object[] { });
-                            _addToJson(ret, propName, propValue);
+                            _addToJson(ret, propName, propValue, maxLevel, currLevel);
                         }
                         catch (Exception e) { string a = e.Message; }
 
@@ -943,8 +950,7 @@ namespace JsonMaker
                             else
                             {
 
-                                var obj = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(typeStr);
-                                obj = UnSerializeObject(new JSON(data.get(propName)), obj, rebuildChildren);
+                                var obj = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(typeStr);obj = UnSerializeObject(new JSON(data.get(propName)), obj, rebuildChildren);
                                 if (obj != null)
                                 {
                                     ((MethodInfo)c).Invoke(result, new object[] { obj });
@@ -980,11 +986,12 @@ namespace JsonMaker
             return result;
         }
 
-        public static void _addToJson(JSON json, string propName, object propValue)
+        public static void _addToJson(JSON json, string propName, object propValue, int maxLevel = int.MaxValue, int currLevel = 1)
         {
-            string typeStr = propValue.GetType().ToString();
+            if (currLevel > maxLevel)
+                return;
 
-            //try add a primitive type
+            string typeStr = propValue.GetType().ToString();
             if (propValue is int)
                 json.setInt(propName, (int)propValue);
             else if (propValue is double)
@@ -997,7 +1004,6 @@ namespace JsonMaker
             {
                 json.setString(propName, (string)propValue);
             }
-            //Add a dicionary
             else if (typeStr.Contains("System.Collections.Generic.Dictionary"))
             {
                 json.setString(propName + ".Type", propValue.GetType().ToString());
@@ -1009,16 +1015,14 @@ namespace JsonMaker
                     object current = enumerator.GetType().GetMethod("get_Current").Invoke(enumerator, new object[] { });
                     object ret3 = propValue.GetType().GetMethod("get_Item").Invoke(propValue, new object[] { current });
 
-                    _addToJson(json, propName + ".Items[" + count + "].Key.Type", current.GetType().ToString());
-                    _addToJson(json, propName + ".Items[" + count + "].Key.Value", current);
-
-                    _addToJson(json, propName + ".Items[" + count + "].Value.Type", ret3.GetType().ToString());
-                    _addToJson(json, propName + ".Items[" + count + "].Value.Value", ret3);
+                    _addToJson(json, propName + ".Items[" + count + "].Key.Type", current.GetType().ToString(), maxLevel, currLevel + 1);
+                    _addToJson(json, propName + ".Items[" + count + "].Key.Value", current, maxLevel, currLevel + 1);
+                    _addToJson(json, propName + ".Items[" + count + "].Value.Type", ret3.GetType().ToString(), maxLevel, currLevel + 1);
+                    _addToJson(json, propName + ".Items[" + count + "].Value.Value", ret3, maxLevel, currLevel + 1);
 
                     count++;
                 }
             }
-            //Add a Lists
             else if (typeStr.Contains("System.Collections.Generic.List"))
             {
                 json.setString(propName + ".Type", propValue.GetType().ToString());
@@ -1030,17 +1034,22 @@ namespace JsonMaker
                 {
                     object ret3 = propValue.GetType().GetMethod("get_Item").Invoke(propValue, new object[] { count });
 
-                    _addToJson(json, propName + ".Items[" + count + "].Type", ret3.GetType().ToString());
-                    _addToJson(json, propName + ".Items[" + count + "].Value", ret3);
+                    _addToJson(json, propName + ".Items[" + count + "].Type", ret3.GetType().ToString(), maxLevel, currLevel + 1);
+                    _addToJson(json, propName + ".Items[" + count + "].Value", ret3, maxLevel, currLevel + 1);
                 }
             }
-            //Add a another type of object
             else if (!typeStr.Contains("System.Collections.Generic"))
+            //else if (propValue is Object)
             {
-                var serializedData = SerializeObject(propValue);
-                json.set(propName, serializedData);
+                if (currLevel <= maxLevel)
+                {
+                    var serializedData = _SerializeObject(propValue, maxLevel, currLevel + 1);
+                    json.set(propName, serializedData);
+                }
             }
+            //json.setString(propName, propValue.ToString());*/
         }
+
 
         #endregion
 
