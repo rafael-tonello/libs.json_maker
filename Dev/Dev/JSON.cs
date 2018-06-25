@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -748,8 +749,7 @@ namespace JsonMaker
             StringBuilder ret = new StringBuilder();
             foreach (var att in text)
                 if (chars.Contains(att))
-                    ret.Append(att);
-            return ret.ToString();
+                    ret.Append(att);return ret.ToString();
         }
 
         private string __unescapeString(string data)
@@ -796,11 +796,6 @@ namespace JsonMaker
 
 
         #region exclusive to CSharp (Uses reflection). Serializer and Unserializer for public properties
-        /// <summary>
-        /// Convert any object to JSON (JSonMaker) object. Only public properties with get; and set; will be converted (Example: string foo{get; set;} or string foo{get{return _foo;} set{_foo = value}}
-        /// </summary>
-        /// <param name="obj">The object to be serialized (converted to a JSON object)</param>
-        /// <returns>Returns an JSON object, with all properties the system coul find</returns>
         public static JSON SerializeObject(Object obj, int maxLevel = int.MaxValue)
         {
             return _SerializeObject(obj, maxLevel, 1);
@@ -851,12 +846,13 @@ namespace JsonMaker
         {
 
             //reconstituite the original object
-            object result;
+            object result = null;
             if (destObject != null)
                 result = destObject;
-            else
+            else if (data.contains("Type"))
                 result = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(data.getString("Type"));
 
+            //if result can't be instanciate, checks if JOSN specifies a CSharp primitive Type
             if (result == null)
             {
                 string typestr = data.getString("Type");
@@ -872,123 +868,181 @@ namespace JsonMaker
                 else if (typestr == "System.String")
                     return data.getString("Value");
                 else
-                    //try to unserialize to an ExpandoObject
-                    return null;
+                    //return null;
+
+                    //if the assembly don't contais the current type, use an expando object
+                    result = new ExpandoObject();
             }
 
-            var selfMethods = result.GetType().GetMembers();
-            //scrols the methods, looking for "set_"
-            foreach (var c in selfMethods)
+            Dictionary<string, MemberInfo> props = new Dictionary<string, MemberInfo>();
+
+            //in expando object cases, all propertyes in JSON may be imported
+            if (result is ExpandoObject)
             {
-                if (c.Name.StartsWith("set_"))
+                List<string> propsInJson = data.getChildsNames("");
+                foreach (var c in propsInJson)
+                    props.Add(c, null);
+            }
+            //in internal types, just properties of this types are allowed
+            else
+            {
+                var selfMethods = result.GetType().GetMembers();
+                //scrols the methods, looking for "set_"
+                foreach (var c in selfMethods)
                 {
-                    string propName = c.Name.Substring(c.Name.IndexOf('_') + 1);
-                    //looks in DATA to see if this contains a property named 'propName'
-                    if (data.contains(propName))
+                    if (c.Name.StartsWith("set_"))
                     {
-                        var JSType = data.getJSONType(propName);
-                        //checks if is a type
-                        if ((rebuildChildren) && (data.contains(propName + ".Type")))
+                        string propName = c.Name.Substring(c.Name.IndexOf('_') + 1);
+                        props.Add(propName, c);
+
+                    }
+                }
+            }
+
+
+            //scrolls through properties to be imported
+            foreach (var curr in props)
+            {
+                //takes the name of perty and, in cases of internal types, the method to be used to set a property
+                string propName = curr.Key;
+                MethodInfo c = curr.Value != null ? (MethodInfo)curr.Value : null;
+
+                //looks in DATA to see if this contains a property named 'propName'
+                if (data.contains(propName))
+                {
+                    var JSType = data.getJSONType(propName);
+                    //checks if is a type
+                    if ((rebuildChildren) && (data.contains(propName + ".Type")))
+                    {
+                        string typeStr = data.getString(propName + ".Type");
+
+                        //check if the type is a List
+                        if (typeStr.Contains("System.Collections.Generic.List"))
                         {
-                            string typeStr = data.getString(propName + ".Type");
+                            //take the string type from JSON
+                            string listTypeString = typeStr.Substring(typeStr.IndexOf('[') + 1);
+                            listTypeString = listTypeString.Substring(0, listTypeString.IndexOf(']'));
+                            Type listItemsType = Type.GetType(listTypeString);
 
-                            //check if the type is a List
-                            if (typeStr.Contains("System.Collections.Generic.List"))
+
+                            //crate a new list, with the type scpecified in the JSON
+                            Type listType = typeof(List<>).MakeGenericType(listItemsType);
+                            object list = Activator.CreateInstance(listType);
+
+                            //add JSON items to the list
+                            int itemsCount = data.getArrayLength(propName + ".Items");
+                            for (int cItems = 0; cItems < itemsCount; cItems++)
                             {
-                                //take the string type from JSON
-                                string listTypeString = typeStr.Substring(typeStr.IndexOf('[') + 1);
-                                listTypeString = listTypeString.Substring(0, listTypeString.IndexOf(']'));
-                                Type listItemsType = Type.GetType(listTypeString);
+                                string kName = propName + ".Items[" + cItems + "]";
+                                object currItem = UnSerializeObject(new JSON(data.get(kName)));
 
-
-                                //crate a new list, with the type scpecified in the JSON
-                                Type listType = typeof(List<>).MakeGenericType(listItemsType);
-                                object list = Activator.CreateInstance(listType);
-
-                                //add JSON items to the list
-                                int itemsCount = data.getArrayLength(propName + ".Items");
-                                for (int cItems = 0; cItems < itemsCount; cItems++)
-                                {
-                                    string kName = propName + ".Items[" + cItems + "]";
-                                    object currItem = UnSerializeObject(new JSON(data.get(kName)));
-
-                                    list.GetType().GetMethod("Add").Invoke(list, new object[] { currItem });
-                                    ((MethodInfo)c).Invoke(result, new object[] { list });
-                                }
+                                list.GetType().GetMethod("Add").Invoke(list, new object[] { currItem });
                             }
-                            //checks if the type is a dictionary
-                            else if (typeStr.Contains("System.Collections.Generic.Dictionary"))
+                            if (c != null)
+                                ((MethodInfo)c).Invoke(result, new object[] { list });
+                            else if (result is ExpandoObject)
+                                ((IDictionary<string, object>)result)[propName] = list;
+                        }
+                        //checks if the type is a dictionary
+                        else if (typeStr.Contains("System.Collections.Generic.Dictionary"))
+                        {
+                            //takes the types names (strings) of key and value from JSON
+                            string dicTypesString = typeStr.Substring(typeStr.IndexOf('[') + 1);
+                            dicTypesString = dicTypesString.Substring(0, dicTypesString.IndexOf(']'));
+                            string[] dicTypesStringsArray = dicTypesString.Split(',');
+                            Type dicKeyType = Type.GetType(dicTypesStringsArray[0]);
+                            Type dicValueType = Type.GetType(dicTypesStringsArray[1]);
+
+                            //create a new Dictionary, with the types specifieds in the JSON
+                            //crate a new list, with the type scpecified in the JSON
+                            Type dicType = typeof(Dictionary<,>).MakeGenericType(new Type[] { dicKeyType, dicValueType });
+                            object dictionary = Activator.CreateInstance(dicType);
+
+                            //add items to dictionary
+                            int itemsLength = data.getArrayLength(propName + ".Items");
+                            for (int countItems = 0; countItems < itemsLength; countItems++)
                             {
-                                //takes the types names (strings) of key and value from JSON
-                                string dicTypesString = typeStr.Substring(typeStr.IndexOf('[') + 1);
-                                dicTypesString = dicTypesString.Substring(0, dicTypesString.IndexOf(']'));
-                                string[] dicTypesStringsArray = dicTypesString.Split(',');
-                                Type dicKeyType = Type.GetType(dicTypesStringsArray[0]);
-                                Type dicValueType = Type.GetType(dicTypesStringsArray[1]);
+                                //takes the key from json
+                                string temp = data.get(propName + ".Items[" + countItems + "].Key");
+                                temp = data.getString(propName + ".Items[" + countItems + "].Key");
 
-                                //create a new Dictionary, with the types specifieds in the JSON
-                                //crate a new list, with the type scpecified in the JSON
-                                Type dicType = typeof(Dictionary<,>).MakeGenericType(new Type[] { dicKeyType, dicValueType });
-                                object dictionary = Activator.CreateInstance(dicType);
+                                string currKeyData = data.getString(propName + ".Items[" + countItems + "].Key");
+                                object currKey = UnSerializeObject(new JSON(currKeyData));
+                                //takes the value from json
+                                temp = data.get(propName + ".Items[" + countItems + "].Value");
+                                temp = data.getString(propName + ".Items[" + countItems + "].Value");
 
-                                //add items to dictionary
-                                int itemsLength = data.getArrayLength(propName + ".Items");
-                                for (int countItems = 0; countItems < itemsLength; countItems++)
-                                {
-                                    //takes the key from json
-                                    string temp = data.get(propName + ".Items[" + countItems + "].Key");
-                                    temp = data.getString(propName + ".Items[" + countItems + "].Key");
-
-                                    string currKeyData = data.getString(propName + ".Items[" + countItems + "].Key");
-                                    object currKey = UnSerializeObject(new JSON(currKeyData));
-                                    //takes the value from json
-                                    temp = data.get(propName + ".Items[" + countItems + "].Value");
-                                    temp = data.getString(propName + ".Items[" + countItems + "].Value");
-
-                                    string currValueData = data.getString(propName + ".Items[" + countItems + "].Value");
-                                    object currValue = UnSerializeObject(new JSON(currValueData));
+                                string currValueData = data.getString(propName + ".Items[" + countItems + "].Value");
+                                object currValue = UnSerializeObject(new JSON(currValueData));
 
 
-                                    //add the item to Dictionary
-                                    object Add = dictionary.GetType().GetMethod("Add").Invoke(dictionary, new object[] { currKey, currValue });
-
-                                }
+                                //add the item to Dictionary
+                                object Add = dictionary.GetType().GetMethod("Add").Invoke(dictionary, new object[] { currKey, currValue });
 
                             }
-                            else
-                            {
-
-                                var obj = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(typeStr);obj = UnSerializeObject(new JSON(data.get(propName)), obj, rebuildChildren);
-                                if (obj != null)
-                                {
-                                    ((MethodInfo)c).Invoke(result, new object[] { obj });
-                                }
-                            }
+                            if (c != null)
+                                ((MethodInfo)c).Invoke(result, new object[] { dictionary });
+                            else if (result is ExpandoObject)
+                                ((IDictionary<string, object>)result)[propName] = dictionary;
 
                         }
                         else
                         {
-                            switch (JSType)
+                            var obj = System.Reflection.Assembly.GetExecutingAssembly().CreateInstance(typeStr);
+                            obj = UnSerializeObject(new JSON(data.get(propName)), obj, rebuildChildren);
+                            if (obj != null)
                             {
-                                case JSONObject.SOType.Boolean:
-                                    ((MethodInfo)c).Invoke(result, new object[] { data.getBoolean(propName) });
-                                    break;
-                                case JSONObject.SOType.Double:
-                                    ((MethodInfo)c).Invoke(result, new object[] { data.getDouble(propName) });
-                                    break;
-                                case JSONObject.SOType.Int:
-                                    ((MethodInfo)c).Invoke(result, new object[] { data.getInt(propName) });
-                                    break;
-                                case JSONObject.SOType.DateTime:
-                                    ((MethodInfo)c).Invoke(result, new object[] { data.getDateTime(propName) });
-                                    break;
-                                case JSONObject.SOType.String:
-                                    ((MethodInfo)c).Invoke(result, new object[] { data.getString(propName) });
-                                    break;
+                                if (c != null)
+                                    ((MethodInfo)c).Invoke(result, new object[] { obj });
+                                else if (result is ExpandoObject)
+                                    ((IDictionary<string, object>)result)[propName] = obj;
                             }
+                        }
+
+                    }
+                    else
+                    {
+                        switch (JSType)
+                        {
+                            case JSONObject.SOType.Boolean:
+                                if (c != null)
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getBoolean(propName) });
+                                else if (result is ExpandoObject)
+                                    ((IDictionary<string, object>)result)[propName] = data.getBoolean(propName);
+                                break;
+                            case JSONObject.SOType.Double:
+                                if (c != null)
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getDouble(propName) });
+                                else if (result is ExpandoObject)
+                                    ((IDictionary<string, object>)result)[propName] = data.getDouble(propName);
+
+                                break;
+                            case JSONObject.SOType.Int:
+                                if (c != null)
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getInt(propName) });
+                                else if (result is ExpandoObject)
+                                    ((IDictionary<string, object>)result)[propName] = data.getInt(propName);
+                                break;
+                            case JSONObject.SOType.DateTime:
+                                if (c != null)
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getDateTime(propName) });
+                                else if (result is ExpandoObject)
+                                    ((IDictionary<string, object>)result)[propName] = data.getDateTime(propName);
+                                break;
+                            case JSONObject.SOType.String:
+                                if (c != null)
+                                    ((MethodInfo)c).Invoke(result, new object[] { data.getString(propName) });
+                                else if (result is ExpandoObject)
+                                    ((IDictionary<string, object>)result)[propName] = data.getString(propName);
+                                break;
+                            case JSONObject.SOType.__Array:
+                            case JSONObject.SOType.__Object:
+                                ((IDictionary<string, object>)result)[propName] = UnSerializeObject(new JSON(data.get(propName)));
+                                break;
                         }
                     }
                 }
+
             }
 
             return result;
@@ -1059,9 +1113,24 @@ namespace JsonMaker
                     _addToJson(json, propName + ".Items[" + count + "].Value", ret3, maxLevel, currLevel + 1);
                 }
             }
-            else if (!typeStr.Contains("System.Collections.Generic"))
-            //else if (propValue is Object)
+            else if (propValue is ExpandoObject)
             {
+                IDictionary<string, object> dic = ((IDictionary<string, object>)propValue);
+                if (currLevel <= maxLevel)
+                {
+                    foreach (var currItem in dic)
+                    {
+                        var serializedData = _SerializeObject(currItem.Value, maxLevel, currLevel + 1);
+                        if (serializedData != null)
+                            json.set(propName, serializedData);
+                        else
+                            json.set(propName, "null");
+                    }
+                }
+            }
+            else if (!typeStr.Contains("System.Collections.Generic"))
+            {
+
                 if (currLevel <= maxLevel)
                 {
                     var serializedData = _SerializeObject(propValue, maxLevel, currLevel + 1);
@@ -1071,9 +1140,7 @@ namespace JsonMaker
                         json.set(propName, "null");
                 }
             }
-            //json.setString(propName, propValue.ToString());*/
         }
-
 
         #endregion
 

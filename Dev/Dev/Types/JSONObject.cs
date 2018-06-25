@@ -9,7 +9,7 @@ public class JSONObject
     public JSONObject parent;
 
 
-    public enum SOType { Null, String, DateTime, Int, Double, Boolean }
+    public enum SOType { Null, String, DateTime, Int, Double, Boolean, __Object, __Array}
     private SOType type = SOType.Null;
     private string singleValue;
 
@@ -129,6 +129,13 @@ public class JSONObject
 
     public SOType getJSONType()
     {
+        if (childs.Count > 0)
+        {
+            if (this.isArray())
+                return SOType.__Array;
+            else
+                return SOType.__Object;
+        }
         return this.type;
     }
 
@@ -176,6 +183,9 @@ public class JSONObject
     public bool isArray()
     {
         int temp = 0;
+
+        if (this.childs.Count == 0)
+            return false;
 
         int cont = 0;
         while (cont < this.childs.Count)
