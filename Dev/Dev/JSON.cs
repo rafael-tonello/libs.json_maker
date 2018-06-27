@@ -808,31 +808,43 @@ namespace JsonMaker
             JSON ret = new JSON();
             ret.setString("Type", obj.GetType().ToString());
 
-            var teste = obj.GetType().GetMembers();
-
-            foreach (var prop in teste)
+            if (!(obj is ExpandoObject))
             {
-                if (prop.MemberType == MemberTypes.Method)
+                var teste = obj.GetType().GetMembers();
+
+                foreach (var prop in teste)
                 {
-                    if (prop.Name.StartsWith("get_"))
+                    if (prop.MemberType == MemberTypes.Method)
                     {
-                        string propName = prop.Name.Substring(prop.Name.IndexOf('_') + 1);
-
-                        //(MethodInfo)prop).
-                        object propValue;
-                        try
+                        if (prop.Name.StartsWith("get_"))
                         {
-                            if (((MethodInfo)prop).GetParameters().Length == 0)
-                            {
-                                propValue = ((MethodInfo)prop).Invoke(obj, new object[] { });
-                                if (propValue != null)
-                                    _addToJson(ret, propName, propValue, maxLevel, currLevel);
-                            }
-                        }
-                        catch (Exception e) { string a = e.Message; }
+                            string propName = prop.Name.Substring(prop.Name.IndexOf('_') + 1);
 
+                            //(MethodInfo)prop).
+                            object propValue;
+                            try
+                            {
+                                if (((MethodInfo)prop).GetParameters().Length == 0)
+                                {
+                                    propValue = ((MethodInfo)prop).Invoke(obj, new object[] { });
+                                    if (propValue != null)
+                                        _addToJson(ret, propName, propValue, maxLevel, currLevel);
+                                }
+                            }
+                            catch (Exception e) { string a = e.Message; }
+
+                        }
                     }
                 }
+            }
+            else
+            {
+                IDictionary<string, object> objDic = ((IDictionary<string, object>)obj);
+                foreach (var c in objDic)
+                {
+                    _addToJson(ret, c.Key, c.Value, maxLevel, currLevel);
+                }
+
             }
             return ret;
         }
