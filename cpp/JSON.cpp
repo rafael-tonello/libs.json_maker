@@ -879,12 +879,15 @@ namespace JsonMaker{
     string JSON::getString(string name, string defaultValue)
     {
         string result = this->get(name);
+
+
         if ((result.size() > 0) && (result[0] == '"'))
             result = result.substr(1);
         if ((result.size() > 0) && (result[result.size() - 1] == '"'))
             result = result.substr(0, result.size() - 1);
 
-        result = __unescapeString(result);
+        if (result.size() > 0)
+            result = __unescapeString(result);
 
         if ((result != "") && (result != "null"))
             return result;
