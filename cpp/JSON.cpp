@@ -493,9 +493,17 @@ namespace JsonMaker{
         vector<string> fields;
         stringstream temp;
         bool quotes = false;
+		bool skeepNext = false;
 
         for (int cont = 1; cont < json.size() - 1; cont++)
         {
+			if (skeepNext)
+			{
+				temp << json[cont];
+				skeepNext = false;
+				continue;
+			}
+			
             if (json[cont] == ',')
             {
                 if ((open == 0) && (!quotes))
@@ -518,11 +526,15 @@ namespace JsonMaker{
                     else if ((json[cont] == '}') || (json[cont] == ']'))
                         open--;
                 }
+				else if (json[cont] =='\\')
+				{
+					skeepNext = true;
+				}
 
                 if (json[cont] == '"')
                 {
-                    if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
-                        quotes = !quotes;
+                    //if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
+					quotes = !quotes;
                 }
 
                 // if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
@@ -547,12 +559,18 @@ namespace JsonMaker{
         stringstream result;
 
         bool quotes = false;
-        char oldOldAtt = ' ';
-        char oldAtt = ' ';
+		bool skeepNext = false;
         string specialchars1 = "\r\n\t\0 ";
         for (const auto& att : json)
         {
-            if ((att == '\"') && ((oldAtt != '\\') || (oldOldAtt == '\\')))
+			if (skeepNext)
+			{
+				result << att;	
+				skeepNext = false;
+				continue;
+			}
+			
+            if (att == '\"')
                 quotes = !quotes;
 
             if (!quotes)
@@ -562,11 +580,12 @@ namespace JsonMaker{
             }
             else
             {
+				if (att == '\\')
+				{
+					skeepNext = true;
+				}
                 result << att;
             }
-
-            oldOldAtt = oldAtt;
-            oldAtt = att;
         }
 
         return result.str();
