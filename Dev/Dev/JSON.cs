@@ -12,26 +12,42 @@ namespace JsonMaker
     public class JSON : IDisposable
     {
 
-        private JSONObject root = new JSONObject(null);
+        public enum JsonType { Memory, File}
+
+        private IJSONObject root;
+
+        object JsonObjectArguments;
+
+
         public void clear()
         {
             root.clear();
         }
 
-        public JSON() { }
-        public JSON(string JsonString)
+        private void internalInitialize(JsonType type, object arguments)
         {
+            JsonObjectArguments = arguments;
+            if (type == JsonType.Memory)
+                root = new InMemoryJsonObject(null, "");
+            else
+                root = new FileSystemJsonObject(null, "", (string)JsonObjectArguments);
+        }
+
+        public JSON(JsonType type = JsonType.Memory, object arguments = null) { this.internalInitialize(type, arguments); }
+        public JSON(string JsonString, JsonType type = JsonType.Memory, object arguments = null)
+        {
+            this.internalInitialize(type, arguments);
             this.parseJson(JsonString);
         }
         
-        private JSONObject find(string objectName, bool autoCreateTree, JSONObject currentParent)
+        private IJSONObject find(string objectName, bool autoCreateTree, IJSONObject currentParent)
         {
             
             //quebra o nome em um array
             objectName = objectName.Replace("]", "").Replace("[", ".");
             string currentName = objectName;
             string childsNames = "";
-            JSONObject childOnParent;
+            IJSONObject childOnParent;
 
             if (objectName.IndexOf('.') > -1)
             {
@@ -39,11 +55,17 @@ namespace JsonMaker
                 childsNames = objectName.Substring(objectName.IndexOf('.') + 1);
             }
 
-            if (!(currentParent.__getChilds().ContainsKey(currentName)))
+            if (!(currentParent.__containsChild(currentName)))
             {
                 if (autoCreateTree)
                 {
-                    currentParent.__getChilds()[currentName] = new JSONObject(currentParent);
+                    IJSONObject tempObj;
+                    if (currentParent is InMemoryJsonObject)
+                        tempObj = new InMemoryJsonObject((InMemoryJsonObject)currentParent, currentParent.getRelativeName() + "." + currentName);
+                    else
+                        tempObj = new FileSystemJsonObject((FileSystemJsonObject)currentParent, currentParent.getRelativeName() + "." + currentName, (string)JsonObjectArguments);
+
+                    currentParent.setChild(currentName, tempObj);
                 }
                 else
                 {   
@@ -51,7 +73,8 @@ namespace JsonMaker
                 }
             }
 
-            childOnParent = currentParent.__getChilds()[currentName];
+
+            childOnParent = currentParent.__getChild(currentName);
 
 
             if (childsNames == "")
@@ -73,7 +96,7 @@ namespace JsonMaker
                 return;
             }
 
-            JSONObject temp = this.find(objectName, true, this.root);
+            IJSONObject temp = this.find(objectName, true, this.root);
 
             /*if (value[0] == '\"')
                 value = value.Substring(1, value.Length - 2);*/
@@ -84,19 +107,21 @@ namespace JsonMaker
 
         }
 
-        private void del(JSONObject node)
+        private void del(IJSONObject node)
         {
-            var childs = node.__getChilds();
-            while (childs.Count > 0)
+            node.clear();
+            var childs = node.__getChildsNames();
+            foreach (var c in childs)
             {
-                del(childs.ElementAt(0).Value);
+                del(node.__getChild(c));
             }
             childs.Clear();
 
-            var parentNodes = node.parent.__getChilds();
-            for (int cont = 0; cont < parentNodes.Count; cont++)
+            /*
+            var parentNodesNames = node.parent.__getChildsNames();
+            for (int cont = 0; cont < parentNodesNames.Count; cont++)
             {
-                if (parentNodes.ElementAt(cont).Value == node)
+                if (parentNodesNames[cont] == node)
                 {
                     //if parent is an array, pull the elements forward backwards
                     if (node.parent.isArray())
@@ -112,7 +137,7 @@ namespace JsonMaker
                     }
                     break;
                 }
-            }
+            }*/
         }
 
         Semaphore interfaceSemaphore = new Semaphore(1, 1);
@@ -124,7 +149,7 @@ namespace JsonMaker
         public void del(string objectName)
         {
             interfaceSemaphore.WaitOne();
-            JSONObject temp = this.find(objectName, false, this.root);
+            IJSONObject temp = this.find(objectName, false, this.root);
             if (temp != null)
                 del(temp);
 
@@ -135,13 +160,14 @@ namespace JsonMaker
 
         public void clearChilds(string objectName)
         {
-            JSONObject temp = this.find(objectName, false, this.root);
+            IJSONObject temp = this.find(objectName, false, this.root);
             if (temp != null)
             {
-                var childs = temp.__getChilds();
-                while (childs.Count > 0)
+                //var childs = temp.__getChilds();
+                var names = temp.__getChildsNames();
+                foreach (var c in names)
                 {
-                    del(childs.ElementAt(0).Value);
+                    del(temp.__getChild(c));
                 }
             }
 
@@ -218,7 +244,7 @@ namespace JsonMaker
         public string get(string objectName, bool format = false, bool quotesOnNames = true)
         {
             interfaceSemaphore.WaitOne();
-            JSONObject temp = this.find(objectName, false, this.root);
+            IJSONObject temp = this.find(objectName, false, this.root);
             interfaceSemaphore.Release();
             if (temp != null)
                 return temp.ToJson(quotesOnNames, format);
@@ -227,7 +253,7 @@ namespace JsonMaker
 
         }
 
-        private List<string> getObjectsNames(JSONObject currentItem = null)
+        private List<string> getObjectsNames(IJSONObject currentItem = null)
         {
             List<string> retorno = new List<string>();
 
@@ -239,13 +265,14 @@ namespace JsonMaker
 
             List<string> childsNames;
 
-            for (int cont = 0; cont < currentItem.__getChilds().Count; cont++)
+            var chieldsNames= currentItem.__getChildsNames();
+            for (int cont = 0; cont < chieldsNames.Count; cont++)
             {
 
-                childsNames = getObjectsNames(currentItem.__getChilds().ElementAt(cont).Value);
+                childsNames = getObjectsNames(currentItem.__getChild(chieldsNames[cont]));
 
 
-                parentName = currentItem.__getChilds().ElementAt(cont).Key;
+                parentName = chieldsNames[cont];
                 //adiciona os filhos ao resultado
                 //verifica se o nome atual atende ao filtro
                 foreach (var att in childsNames)
@@ -258,7 +285,7 @@ namespace JsonMaker
 
                     retorno.Add(nAtt);
                 }
-                retorno.Add(currentItem.__getChilds().ElementAt(cont).Key);
+                retorno.Add(chieldsNames[cont]);
             }
             return retorno;
 
@@ -273,7 +300,7 @@ namespace JsonMaker
         {
             if (objectName == "")
             {
-                JSONObject nullo = null;
+                IJSONObject nullo = null;
                 return this.getObjectsNames(nullo);
             }
             else
@@ -287,16 +314,17 @@ namespace JsonMaker
             }
         }
 
-        private List<string> getChildsNames(JSONObject currentItem = null)
+        private List<string> getChildsNames(IJSONObject currentItem = null)
         {
             List<string> retorno = new List<string>();
 
             if (currentItem == null)
                 currentItem = this.root;
 
-            for (int cont = 0; cont < currentItem.__getChilds().Count; cont++)
+            var chieldsNames = currentItem.__getChildsNames();
+            for (int cont = 0; cont < chieldsNames.Count; cont++)
             {
-                retorno.Add(currentItem.__getChilds().ElementAt(cont).Key);
+                retorno.Add(chieldsNames[cont]);
             }
             return retorno;
         }
@@ -310,7 +338,7 @@ namespace JsonMaker
         {
             if (objectName == "")
             {
-                JSONObject nullo = null;
+                IJSONObject nullo = null;
                 return this.getChildsNames(nullo);
             }
             else
@@ -555,17 +583,17 @@ namespace JsonMaker
 
         #endregion
 
-        public JSONObject.SOType getJSONType(string objectName)
+        public SOType getJSONType(string objectName)
         {
             interfaceSemaphore.WaitOne();
-            JSONObject temp = this.find(objectName, false, this.root);
+            IJSONObject temp = this.find(objectName, false, this.root);
             interfaceSemaphore.Release();
             if (temp != null)
             {
                 return temp.getJSONType();
             }
             else
-                return JSONObject.SOType.Null;
+                return SOType.Null;
         }
 
         /// <summary>
@@ -772,7 +800,7 @@ namespace JsonMaker
             var finded = this.find(objectName, false, this.root);
 
             if (finded != null)
-                return finded.__getChilds().Count();
+                return finded.__getChildsNames().Count();
             return 0;
         }
 

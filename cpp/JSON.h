@@ -17,29 +17,55 @@
 using namespace std;
 
 namespace JsonMaker{
-	enum SOType { Null, String, DateTime, Int, Double, Boolean };
-    class JSONObject
+	enum SOType { Null, String, DateTime, Int, Double, Boolean, __Object, __Array };
+	enum JsonType { Memory, File};
+	class IJSONObject
+    {
+        public:
+            virtual void clear() = 0;
+            virtual void del(string name) = 0;
+            virtual void setChild(string name, IJSONObject *child) = 0;
+            virtual void setSingleValue(string value) = 0;
+            virtual string serializeSingleValue() = 0;
+			virtual string getRelativeName() = 0;
+            virtual IJSONObject* __getChild(string name) = 0;
+			virtual bool __containsChild(string name) = 0;
+			virtual vector<string> __getChildsNames() = 0;
+			virtual bool isDeletable() = 0;
+			virtual SOType getJSONType() = 0;
+            
+			virtual bool isArray();
+            virtual string ToJson(bool quotesOnNames, bool format = false, int level = 0);
+		protected:
+			SOType __determineSoType(string value);
+    };
+	
+    class InMemoryJsonObject: public IJSONObject
     {
         protected:
             
-            map<string, JSONObject*> childs;
+            map<string, IJSONObject*> childs;
             SOType type = SOType::Null;
+			string relativeName;
 
-            string serializeSingleValue();
         
         public:
+            string serializeSingleValue();
             string singleValue;
-            JSONObject *parent;
-            JSONObject(JSONObject *pParent);
-            void setChild(string name, JSONObject *child);
+            IJSONObject *parent;
+            InMemoryJsonObject(InMemoryJsonObject *pParent, string relativeName);
+            void setChild(string name, IJSONObject *child);
             void del(string name);
-            JSONObject* get(string name);
+            IJSONObject* get(string name);
             void clear();
-            string ToJson(bool quotesOnNames, bool format = false, int level = 0);
 			SOType getJSONType();
             void setSingleValue(string value);
-            bool isArray();
-            map<string, JSONObject*> *__getChilds();
+			string getRelativeName();
+			IJSONObject* __getChild(string name);
+			bool __containsChild(string name);
+			vector<string> __getChildsNames();
+			bool isDeletable();
+            
     };
 
 
@@ -47,19 +73,23 @@ namespace JsonMaker{
     {
 
         private:
-            JSONObject *root = new JSONObject(NULL);
+			JsonType jsonType = JsonType::Memory;
+            IJSONObject *root;
+			void* JsonObjectArguments;
+			
+			void internalInitialize(JsonType type, void* arguments);
             
 
             
-            JSONObject *find(string objectName, bool autoCreateTree, JSONObject *currentParent);
+            IJSONObject *find(string objectName, bool autoCreateTree, IJSONObject *currentParent);
 
             void _set(string objectName, string value);
 
-            void del(JSONObject *node);
+            void del(IJSONObject *node);
 
-            vector<string> getObjectsNames(JSONObject *currentItem = NULL);
+            vector<string> getObjectsNames(IJSONObject *currentItem = NULL);
 
-            vector<string> getChildsNames(JSONObject *currentItem = NULL);
+            vector<string> getChildsNames(IJSONObject *currentItem = NULL);
 
             vector<string> getJsonFields(string json);
 
@@ -68,8 +98,8 @@ namespace JsonMaker{
             bool isAJson(string json, bool objects = true, bool arrays = true);
 
         public:
-            JSON();
-            JSON(string JsonString);
+            JSON(JsonType type = JsonType::Memory, void * arguments = NULL);
+            JSON(string JsonString, JsonType type = JsonType::Memory, void* arguments = NULL);
 
             /// <summary>
             /// Removes an object from JSON three
@@ -231,7 +261,7 @@ namespace JsonMaker{
 
     std::string ReplaceString(std::string subject, const std::string& search, const std::string& replace);
 
-    map<string, JSONObject*>::const_iterator getChildByIndex (map<string, JSONObject*> *maptosearch, int index);
+    map<string, IJSONObject*>::const_iterator getChildByIndex (map<string, IJSONObject*> *maptosearch, int index, bool *sucess);
 
     // trim from start (in place)
     static inline void ltrim(std::string &s);
