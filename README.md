@@ -3,15 +3,15 @@
 A C++ and C# library to create JSON using javascript notation:
 
 ## C#
-`JSON jm = new JSON();`
-`jm.setString("MyObject.Child.Child2.property", "example");`
-`Console.WriteLine(jm.ToString());`
-
+`JSON jm = new JSON();`<br/>
+`jm.setString("MyObject.Child.Child2.property", "example");`<br/>
+`Console.WriteLine(jm.ToString());`<br/>
+<br/>
 
 ## C++
-`JSON *jm = new JSON();`
-`jm->setString("MyObject.Child.Child2.property", "example");`
-`cout << jm.ToString());`
+`JSON *jm = new JSON();`<br/>
+`jm->setString("MyObject.Child.Child2.property", "example");`<br/>
+`cout << jm.ToString());`<br/>
 
 
 
