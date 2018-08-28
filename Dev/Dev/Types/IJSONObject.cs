@@ -65,7 +65,7 @@ namespace JsonMaker
                     else
                     {
                         if (quotesOnNames)
-                            result.Append('"' + childsNames[cont]+ "\":" + current.ToJson(quotesOnNames, format, level));
+                            result.Append('"' + childsNames[cont] + "\":" + current.ToJson(quotesOnNames, format, level));
                         else
                             result.Append(childsNames[cont] + ":" + current.ToJson(quotesOnNames, format, level));
                     }
@@ -121,12 +121,14 @@ namespace JsonMaker
                 else
                 {
                     //try as int
-                    if ((value != "") && ("0123456789+-".Contains(value[0]+"")) && (int.TryParse(value, out sucess)))
+                    //Note: In json, numbers can'r start with 0
+                    if ((value != "") && ("123456789+-".Contains(value[0] + "")) && (int.TryParse(value, out sucess)))
                         return SOType.Int;
                     else
                     {
                         //try as double
-                        if ((value != "") && ("0123456789+-.".Contains(value[0] + "")) && (double.TryParse(value, out sucess2)))
+                        //Note: In json, numbers can'r start with 0
+                        if ((value != "") && ("123456789+-.".Contains(value[0] + "")) && (double.TryParse(value, out sucess2)))
                             return SOType.Double;
                         else if ((value.Contains(":")) && (DateTime.TryParse(value.Replace("\"", ""), out sucess3)))
                         {

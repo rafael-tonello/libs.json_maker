@@ -12,7 +12,7 @@ namespace JsonMaker
     public class JSON : IDisposable
     {
 
-        public enum JsonType { Memory, File}
+        public enum JsonType { Memory, File }
 
         private IJSONObject root;
 
@@ -39,10 +39,10 @@ namespace JsonMaker
             this.internalInitialize(type, arguments);
             this.parseJson(JsonString);
         }
-        
+
         private IJSONObject find(string objectName, bool autoCreateTree, IJSONObject currentParent)
         {
-            
+
             //quebra o nome em um array
             objectName = objectName.Replace("]", "").Replace("[", ".");
             string currentName = objectName;
@@ -69,7 +69,7 @@ namespace JsonMaker
                     currentParent.setChild(currentName, tempObj);
                 }
                 else
-                {   
+                {
                     return null;
                 }
             }
@@ -176,21 +176,6 @@ namespace JsonMaker
 
         }
 
-        /// <summary>
-        /// Set or creates an property with an json string
-        /// </summary>
-        /// <param name="objectName">The json object name</param>
-        /// <param name="value">The json string </param>
-        public void set(string objectName, string value)
-        {
-            interfaceSemaphore.WaitOne();
-
-            if (objectName != "")
-                objectName = objectName + ":";
-            this.parseJson(objectName + value);
-            interfaceSemaphore.Release();
-
-        }
 
         /// <summary>
         /// Insert a new json in current json three
@@ -266,7 +251,7 @@ namespace JsonMaker
 
             List<string> childsNames;
 
-            var chieldsNames= currentItem.__getChildsNames();
+            var chieldsNames = currentItem.__getChildsNames();
             for (int cont = 0; cont < chieldsNames.Count; cont++)
             {
 
@@ -366,18 +351,34 @@ namespace JsonMaker
 
         }
 
-        /*public void parseJson(string json, string parentName = "")
+        /// <summary>
+        /// Set or creates an property with an json string
+        /// </summary>
+        /// <param name="objectName">The json object name</param>
+        /// <param name="value">The json string </param>
+        public void set(string objectName, string value)
         {
-            json = clearJsonString(json);
-            _parseJson(json, parentName);
-        }*/
+            interfaceSemaphore.WaitOne();
+
+            if (objectName != "")
+            {
+                if (!objectName.StartsWith("\""))
+                    objectName = '"' + objectName + '"';
+                objectName = "{" + objectName + ":" + value + "}";
+                this.parseJson(objectName);
+            }
+            else
+                this.parseJson(value);
+            interfaceSemaphore.Release();
+
+        }
 
         private enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord }
         public void parseJson(string json, string parentName = "")
         {
             var currentObject = this.root;
             if (parentName != "")
-                 currentObject = this.find(parentName, true, root);
+                currentObject = this.find(parentName, true, root);
             currentObject.name = parentName;
 
             ParseStates state = ParseStates.findValueStart;
@@ -486,8 +487,10 @@ namespace JsonMaker
                             state = ParseStates.findingStart;
                         }
                         else if (!" \t\r\n".Contains(curr))
+                        {
                             //state = "Error.sitax";
                             throw new Exception("SintaxError");
+                        }
                         break;
 
                     case ParseStates.prepareArray:
@@ -507,11 +510,14 @@ namespace JsonMaker
                             ignoreNextChar = false;
                         }
                         else if (curr == '\\')
+                        {
                             ignoreNextChar = true;
+                            currentStringContent.Append(curr);
+                        }
                         else if (curr == '"')
                         {
                             currentObject.setSingleValue(currentStringContent.ToString());
-                            
+
                             //return to parent Object
                             if (parentName.Contains('.'))
                             {
@@ -523,7 +529,7 @@ namespace JsonMaker
                                 parentName = "";
                                 currentObject = root;
                             }
-                            
+
                             state = ParseStates.findingStart;
 
                         }
@@ -586,7 +592,6 @@ namespace JsonMaker
 
                         break;
                 }
-
             }
         }
 

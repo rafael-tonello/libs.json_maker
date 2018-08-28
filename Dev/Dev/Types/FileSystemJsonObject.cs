@@ -19,7 +19,7 @@ namespace JsonMaker
             /*if (parent != null)
                 this.baseFolder = parent.__getBaseFolder();
             else*/
-                this.baseFolder = arguments;
+            this.baseFolder = arguments;
             this.baseFolder = this.baseFolder.Replace("\\", "/");
 
             if (this.baseFolder[this.baseFolder.Length - 1] == '/')
@@ -27,7 +27,7 @@ namespace JsonMaker
 
             this.fileName = this.baseFolder + relativeName.Replace(".", "/");
 
-            if (fileName != "" && fileName[fileName.Length-1] == '/')
+            if (fileName != "" && fileName[fileName.Length - 1] == '/')
                 fileName = fileName.Substring(0, fileName.Length - 1);
 
             this.relativeName = relativeName;
@@ -81,7 +81,7 @@ namespace JsonMaker
             //checks if exists a file
             if (File.Exists(this.fileName))
                 File.Delete(this.fileName);
-            
+
         }
 
         public override void setSingleValue(string value)
@@ -119,7 +119,7 @@ namespace JsonMaker
 
                 //refactor childs names
                 for (int cont = 0; cont < result.Count; cont++)
-                    result[cont] = result[cont].Substring(this.baseFolder.Length + this.relativeName.Length+1).Replace("\\", ".").Replace("/", ".");
+                    result[cont] = result[cont].Substring(this.baseFolder.Length + this.relativeName.Length + 1).Replace("\\", ".").Replace("/", ".");
 
                 return result;
             }

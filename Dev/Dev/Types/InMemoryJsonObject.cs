@@ -27,7 +27,7 @@ namespace JsonMaker
         {
             childs.Remove(name);
         }
-        
+
 
         public override void clear()
         {
@@ -35,7 +35,7 @@ namespace JsonMaker
                 current.clear();
             childs.Clear();
         }
-        
+
         protected override string serializeSingleValue()
         {
             if (this.type == SOType.Null)
@@ -78,7 +78,7 @@ namespace JsonMaker
             if (this.type != SOType.Null)
                 this.singleValue = value;
         }
-        
+
 
         public override List<string> __getChildsNames()
         {
