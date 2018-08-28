@@ -7,6 +7,9 @@ namespace JsonMaker
     public enum SOType { Null, String, DateTime, Int, Double, Boolean, __Object, __Array }
     public abstract class IJSONObject
     {
+        public IJSONObject parent;
+        public string name;
+
         public abstract void clear();
         public abstract void delete(string name);
         public abstract SOType getJSONType();
@@ -118,17 +121,16 @@ namespace JsonMaker
                 else
                 {
                     //try as int
-                    if (int.TryParse(value, out sucess))
+                    if ((value != "") && ("0123456789+-".Contains(value[0]+"")) && (int.TryParse(value, out sucess)))
                         return SOType.Int;
                     else
                     {
                         //try as double
-                        if (double.TryParse(value, out sucess2))
+                        if ((value != "") && ("0123456789+-.".Contains(value[0] + "")) && (double.TryParse(value, out sucess2)))
                             return SOType.Double;
-                        else if ((value.Contains(":") && (DateTime.TryParse(value.Replace("\"", ""), out sucess3))))
+                        else if ((value.Contains(":")) && (DateTime.TryParse(value.Replace("\"", ""), out sucess3)))
                         {
                             return SOType.DateTime;
-
                         }
                         else
                         {

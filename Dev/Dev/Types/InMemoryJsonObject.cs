@@ -8,7 +8,6 @@ namespace JsonMaker
     public class InMemoryJsonObject : IJSONObject
     {
         protected Dictionary<string, IJSONObject> childs = new Dictionary<string, IJSONObject>();
-        public InMemoryJsonObject parent;
 
         private SOType type = SOType.Null;
         private string singleValue;
@@ -43,7 +42,7 @@ namespace JsonMaker
                 return "null";
             else if (this.type == SOType.Boolean)
                 return ((this.singleValue.ToLower() == "true") || (this.singleValue == "1")) ? "true" : "false";
-            else if (this.type == SOType.String)
+            else if ((this.type == SOType.String) || (this.type == SOType.DateTime))
             {
                 if ((this.singleValue.Length > 0) && (this.singleValue[0] != '"'))
                     return '"' + this.singleValue + '"';

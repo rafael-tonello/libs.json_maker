@@ -60,9 +60,13 @@ namespace Dev
 
         private void button2_Click(object sender, EventArgs e)
         {
+            var text = textBox1.Text;
+            DateTime start = DateTime.Now;
             JsonMaker.JSON jm = new JsonMaker.JSON();
-            jm.fromJson(textBox1.Text);
+            jm.fromJson(text);
+            label1.Text = DateTime.Now.Subtract(start).TotalMilliseconds + " ms";
             textBox1.Text = jm.ToJson();
+
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -70,6 +74,33 @@ namespace Dev
             JsonMaker.JSON jm = new JsonMaker.JSON(JsonMaker.JSON.JsonType.File, Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\test");
             jm.fromJson(textBox1.Text);
             textBox1.Text = jm.ToJson();
+        }
+
+
+
+
+        
+        JsonMaker.JSON jmProduct = new JsonMaker.JSON();
+        private void button4_Click(object sender, EventArgs e)
+        {
+            jmProduct.parseJson(textBox1.Text);
+            textBox1.Text = jmProduct.ToString();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            textBox1.Text = jmProduct.getString("product");
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            jmProduct = new JsonMaker.JSON();
+            jmProduct.parseJson(textBox1.Text);
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            textBox1.Text = jmProduct.getString("OpInfo");
         }
     }
 }

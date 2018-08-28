@@ -60,10 +60,11 @@ namespace JsonMaker
                 if (autoCreateTree)
                 {
                     IJSONObject tempObj;
+                    string currentParentRelativeName = currentParent.getRelativeName();
                     if (currentParent is InMemoryJsonObject)
-                        tempObj = new InMemoryJsonObject((InMemoryJsonObject)currentParent, currentParent.getRelativeName() + "." + currentName);
+                        tempObj = new InMemoryJsonObject((InMemoryJsonObject)currentParent, currentParent.getRelativeName() + (currentParentRelativeName.Contains('.') ? "." : "") + currentName);
                     else
-                        tempObj = new FileSystemJsonObject((FileSystemJsonObject)currentParent, currentParent.getRelativeName() + "." + currentName, (string)JsonObjectArguments);
+                        tempObj = new FileSystemJsonObject((FileSystemJsonObject)currentParent, currentParent.getRelativeName() + (currentParentRelativeName.Contains('.') ? "." : "") + currentName, (string)JsonObjectArguments);
 
                     currentParent.setChild(currentName, tempObj);
                 }
@@ -241,7 +242,7 @@ namespace JsonMaker
         /// <param name="objectName">The object name</param>
         /// <param name="quotesOnNames">User '"' in names</param>
         /// <returns></returns>
-        public string get(string objectName, bool format = false, bool quotesOnNames = true)
+        public string get(string objectName, bool format = false, bool quotesOnNames = true, string valueOnNotFound = "undefined")
         {
             interfaceSemaphore.WaitOne();
             IJSONObject temp = this.find(objectName, false, this.root);
@@ -249,7 +250,7 @@ namespace JsonMaker
             if (temp != null)
                 return temp.ToJson(quotesOnNames, format);
             else
-                return "null";
+                return "valueOnNotFound";
 
         }
 
@@ -365,76 +366,227 @@ namespace JsonMaker
 
         }
 
+        /*public void parseJson(string json, string parentName = "")
+        {
+            json = clearJsonString(json);
+            _parseJson(json, parentName);
+        }*/
+
+        private enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord }
         public void parseJson(string json, string parentName = "")
         {
-            //limpa o json, removendo coisas desnecessárias como espaços em branco e tabs
-            json = clearJsonString(json);
-            string name = "";
+            var currentObject = this.root;
+            if (parentName != "")
+                 currentObject = this.find(parentName, true, root);
+            currentObject.name = parentName;
 
-            string value = json;
+            ParseStates state = ParseStates.findValueStart;
 
-            //verifica se o json é uma par chave<-> valor. Se for pega o nome
-            if (json.Contains(':'))
+            bool ignoreNextChar = false;
+            StringBuilder currentStringContent = new StringBuilder();
+            StringBuilder currentNumberContent = new StringBuilder();
+            StringBuilder currentSpecialWordContent = new StringBuilder();
+            StringBuilder currentChildName = new StringBuilder();
+
+            int max = json.Length;
+            char curr = ' ';
+            for (int cont = 0; cont < max; cont++)
             {
-                name = "";
-                int index = 0;
-                while (json[index] != ':')
+                curr = json[cont];
+                switch (state)
                 {
-                    if ("\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnop.qrstuvxywz0123456789[] ".Contains(json[index]))
-                        name += json[index];
-                    else
-                    {
-                        name = "";
+                    case ParseStates.findingStart:
+                        if (curr == '"')
+                        {
+                            if (currentObject.isArray())
+                                state = ParseStates.prepareArray;
+                            else
+                                state = ParseStates.readingName;
+                            currentChildName.Clear();
+                        }
+                        else if ((curr == ',')/* || (curr == '[') || (curr == '{')*/)
+                        {
+                            if (currentObject.isArray())
+                                state = ParseStates.prepareArray;
+                        }
+
+                        else if ((curr == '}') || (curr == ']'))
+                        {
+                            if (parentName.Contains('.'))
+                            {
+                                parentName = parentName.Substring(0, parentName.LastIndexOf('.'));
+                                currentObject = currentObject.parent;
+                            }
+                            else
+                            {
+                                parentName = "";
+                                currentObject = root;
+                            }
+                        }
                         break;
-                    }
-                    index++;
+                    case ParseStates.readingName:
+                        if (curr == '"')
+                        {
+                            state = ParseStates.waitingKeyValueSep;
+                            currentObject = this.find(currentChildName.ToString(), true, currentObject);
+                            currentObject.name = currentChildName.ToString();
+                            parentName = parentName + (parentName != "" ? "." : "") + currentChildName;
+
+                        }
+                        else
+                            currentChildName.Append(curr);
+                        break;
+                    case ParseStates.waitingKeyValueSep:
+                        if (curr == ':')
+                            state = ParseStates.findValueStart;
+                        break;
+                    case ParseStates.findValueStart:
+                        if (curr == '"')
+                        {
+                            state = ParseStates.readingContentString;
+                            currentStringContent.Clear();
+                        }
+                        else if (curr == '{')
+                        {
+                            state = ParseStates.findingStart;
+                        }
+                        else if (curr == '[')
+                            state = ParseStates.prepareArray;
+                        else if ("0123456789-+.".Contains(curr))
+                        {
+                            state = ParseStates.readingContentNumber;
+                            currentNumberContent.Clear();
+                            cont--;
+                        }
+                        else if ("untf".Contains(curr))
+                        {
+                            state = ParseStates.readingContentSpecialWord;
+                            currentSpecialWordContent.Clear();
+                            cont--;
+                        }
+                        else if (curr == ']')
+                        {
+                            //delete currenObject
+                            var temp = currentObject;
+
+                            if (parentName.Contains('.'))
+                            {
+                                parentName = parentName.Substring(0, parentName.LastIndexOf('.'));
+                                currentObject = currentObject.parent;
+                            }
+                            else
+                            {
+                                parentName = "";
+                                currentObject = root;
+                            }
+
+                            currentObject.delete(temp.name);
+
+                            cont--;
+                            state = ParseStates.findingStart;
+                        }
+                        else if (!" \t\r\n".Contains(curr))
+                            //state = "Error.sitax";
+                            throw new Exception("SintaxError");
+                        break;
+
+                    case ParseStates.prepareArray:
+                        //state = "findingStart";
+                        currentChildName.Clear();
+                        currentChildName.Append(currentObject.__getChildsNames().Count.ToString());
+                        currentObject = this.find(currentChildName.ToString(), true, currentObject);
+                        currentObject.name = currentChildName.ToString();
+                        parentName = parentName + (parentName != "" ? "." : "") + currentChildName;
+                        state = ParseStates.findValueStart;
+                        cont--;
+                        break;
+                    case ParseStates.readingContentString:
+                        if (ignoreNextChar)
+                        {
+                            currentStringContent.Append(curr);
+                            ignoreNextChar = false;
+                        }
+                        else if (curr == '\\')
+                            ignoreNextChar = true;
+                        else if (curr == '"')
+                        {
+                            currentObject.setSingleValue(currentStringContent.ToString());
+                            
+                            //return to parent Object
+                            if (parentName.Contains('.'))
+                            {
+                                parentName = parentName.Substring(0, parentName.LastIndexOf('.'));
+                                currentObject = currentObject.parent;
+                            }
+                            else
+                            {
+                                parentName = "";
+                                currentObject = root;
+                            }
+                            
+                            state = ParseStates.findingStart;
+
+                        }
+                        else
+                            currentStringContent.Append(curr);
+                        break;
+                    case ParseStates.readingContentNumber:
+                        if ("0123456789.-+".Contains(curr))
+                            currentNumberContent.Append(curr);
+                        else
+                        {
+                            currentObject.setSingleValue(currentNumberContent.ToString());
+
+                            //return to parent Object
+                            if (parentName.Contains('.'))
+                            {
+                                parentName = parentName.Substring(0, parentName.LastIndexOf('.'));
+                                currentObject = currentObject.parent;
+                            }
+                            else
+                            {
+                                parentName = "";
+                                currentObject = root;
+                            }
+
+                            state = ParseStates.findingStart;
+                        }
+
+                        break;
+                    case ParseStates.readingContentSpecialWord:
+                        if ("truefalseundefindednul".Contains(curr))
+                            currentSpecialWordContent.Append(curr);
+                        else
+                        {
+                            string strTemp = currentSpecialWordContent.ToString();
+                            if ((strTemp == "true") ||
+                                (strTemp == "false") ||
+                                (strTemp == "null") ||
+                                (strTemp == "undefined"))
+                            {
+                                currentObject.setSingleValue(strTemp);
+
+                                //return to parent Object
+                                if (parentName.Contains('.'))
+                                {
+                                    parentName = parentName.Substring(0, parentName.LastIndexOf('.'));
+                                    currentObject = currentObject.parent;
+                                }
+                                else
+                                {
+                                    parentName = "";
+                                    currentObject = root;
+                                }
+
+                                state = ParseStates.findingStart;
+                            }
+                            else
+                                throw new Exception("Invalid simbol " + currentSpecialWordContent);
+                        }
+
+                        break;
                 }
 
-                //se achou o nome, então tira o nome do json, deixando as duas informações em duas variáveis serparadas
-                if (name != "")
-                    value = json.Substring(json.IndexOf(':') + 1);
-
-            }
-
-            //remove aspas do nome, caso houverem
-            name = name.Replace("\"", "");
-
-
-            //se tiver um '{' ou um '[', então processa independentemente cacda um de seus valroes
-            List<string> childs = new List<string>();
-            if ((value != "") && (value[0] == '['))
-            {
-                childs = getJsonFields(value);
-                for (int cont = 0; cont < childs.Count; cont++)
-                    childs[cont] = cont + ":" + childs[cont];
-            }
-            else if ((value != "") && (value[0] == '{'))
-                childs = getJsonFields(value);
-            else
-                childs.Add(value);
-
-
-
-            //parapara o nome do objeto
-            if ((parentName != "") && (name != ""))
-                name = '.' + name;
-
-
-            name = parentName + name;
-
-            //se for um array, cria um novo array
-
-
-            var tempName = name;
-            foreach (var att in childs)
-            {
-                //se for uma string, remove as aspas do inicio e do final
-                //
-                var toInsert = att;
-
-                //adiciona o objeto à lista
-                if (toInsert != json)
-                    this._set(tempName, toInsert);
             }
         }
 
@@ -456,41 +608,42 @@ namespace JsonMaker
                     continue;
                 }
 
-                if (json[cont] == ',')
-                {
-                    if ((open == 0) && (!quotes))
-                    {
-                        fields.Add(temp.ToString());
-                        temp.Clear();
-                    }
-                    else
-                        //if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
-                        temp.Append(json[cont]);
-                }
 
+                if (!quotes)
+                {
+                    if (json[cont] == ',')
+                    {
+                        if (open == 0)
+                        {
+                            fields.Add(temp.ToString());
+                            temp.Clear();
+                            continue;
+                        }
+                    }
+                    else if ((json[cont] == '{') || (json[cont] == '['))
+                        open++;
+                    else if ((json[cont] == '}') || (json[cont] == ']'))
+                        open--;
+                }
                 else
                 {
-                    if (!quotes)
+                    if (json[cont] == '\\')
                     {
-                        if ((json[cont] == '{') || (json[cont] == '['))
-                            open++;
-                        else if ((json[cont] == '}') || (json[cont] == ']'))
-                            open--;
-                    }
-                    else if (json[cont] == '\\')
-                    {
+                        temp.Append(json[cont]);
                         skeepNext = true;
+                        continue;
                     }
-
-                    if (json[cont] == '"')
-                    {
-                        //if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
-                        quotes = !quotes;
-                    }
-
-                    // if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
-                    temp.Append(json[cont]);
                 }
+
+
+                if (json[cont] == '"')
+                {
+                    //if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
+                    quotes = !quotes;
+                }
+
+                // if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
+                temp.Append(json[cont]);
 
 
             }
@@ -612,7 +765,7 @@ namespace JsonMaker
 
             result = __unescapeString(result);
 
-            if ((result != "") && (result != "null"))
+            if ((result != "") && (result != "undefined"))
                 return result;
             else
                 return defaultValue;
