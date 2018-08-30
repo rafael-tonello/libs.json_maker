@@ -901,7 +901,7 @@ namespace JsonMaker
             this.set(name, '"' + newV + '"');
         }
 
-        public void setDateTime_UtcFormat(string name, DateTime value, TimeSpan offset)
+        public void setDateTime_ISOFormat(string name, DateTime value, TimeSpan offset)
         {
             if (offset.Equals(TimeSpan.MinValue))
             {
@@ -909,15 +909,17 @@ namespace JsonMaker
             }
             string timeZone = offset.ToString();
             timeZone = timeZone.Remove(timeZone.LastIndexOf(':'));
-            if (timeZone[0] != '-')
+            if (timeZone=="00:00")
+                timeZone = "Z";
+            else if (timeZone[0] != '-')
                 timeZone = "+" + timeZone;
 
             this.setDateTime(name, value, "yyyy-MM-ddTHH:mm:ss" + timeZone);
         }
 
-        public void setDateTime_UtcFormat(string name, DateTime value)
+        public void setDateTime_ISOFormat(string name, DateTime value)
         {
-            setDateTime_UtcFormat(name, value, TimeSpan.MinValue);
+            setDateTime_ISOFormat(name, value, TimeSpan.MinValue);
         }
 
         /// <summary>
