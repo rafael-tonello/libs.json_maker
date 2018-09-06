@@ -235,8 +235,13 @@ namespace JsonMaker
             if (temp != null)
                 return temp.ToJson(quotesOnNames, format);
             else
-                return "valueOnNotFound";
+                return valueOnNotFound;
 
+        }
+		
+		public IJSONObject getRaw(string objectName)
+        {
+            return this.find(objectName, false, this.root);
         }
 
         private List<string> getObjectsNames(IJSONObject currentItem = null)
