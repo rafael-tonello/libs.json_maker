@@ -238,8 +238,8 @@ namespace JsonMaker
                 return valueOnNotFound;
 
         }
-		
-		public IJSONObject getRaw(string objectName)
+
+        public IJSONObject getRaw(string objectName)
         {
             return this.find(objectName, false, this.root);
         }
@@ -394,11 +394,23 @@ namespace JsonMaker
             StringBuilder currentSpecialWordContent = new StringBuilder();
             StringBuilder currentChildName = new StringBuilder();
 
+            int currLine = 0;
+            int currCol = 0;
+
             int max = json.Length;
             char curr = ' ';
+
             for (int cont = 0; cont < max; cont++)
             {
                 curr = json[cont];
+
+                currCol++;
+                if (curr == '\n')
+                {
+                    currCol = 0;
+                    currLine++;
+                }
+
                 switch (state)
                 {
                     case ParseStates.findingStart:
@@ -463,12 +475,14 @@ namespace JsonMaker
                             state = ParseStates.readingContentNumber;
                             currentNumberContent.Clear();
                             cont--;
+                            currCol--;
                         }
                         else if ("untf".Contains(curr))
                         {
                             state = ParseStates.readingContentSpecialWord;
                             currentSpecialWordContent.Clear();
                             cont--;
+                            currCol--;
                         }
                         else if (curr == ']')
                         {
@@ -489,12 +503,13 @@ namespace JsonMaker
                             currentObject.delete(temp.name);
 
                             cont--;
+                            currCol--;
                             state = ParseStates.findingStart;
                         }
                         else if (!" \t\r\n".Contains(curr))
                         {
                             //state = "Error.sitax";
-                            throw new Exception("SintaxError");
+                            throw new Exception("SintaxError at line "+currLine + " and column "+currCol + ". Expected ' '(space), \t, \r or \n, but found "+curr+".");
                         }
                         break;
 
@@ -507,6 +522,7 @@ namespace JsonMaker
                         parentName = parentName + (parentName != "" ? "." : "") + currentChildName;
                         state = ParseStates.findValueStart;
                         cont--;
+                        currCol--;
                         break;
                     case ParseStates.readingContentString:
                         if (ignoreNextChar)
@@ -534,7 +550,7 @@ namespace JsonMaker
                                 parentName = "";
                                 currentObject = root;
                             }
-
+                            
                             state = ParseStates.findingStart;
 
                         }
@@ -560,6 +576,7 @@ namespace JsonMaker
                                 currentObject = root;
                             }
 
+                            cont--;
                             state = ParseStates.findingStart;
                         }
 
@@ -589,10 +606,11 @@ namespace JsonMaker
                                     currentObject = root;
                                 }
 
+                                cont--;
                                 state = ParseStates.findingStart;
                             }
                             else
-                                throw new Exception("Invalid simbol " + currentSpecialWordContent);
+                                throw new Exception("Invalid simbol at line "+currLine + " and column "+currCol + ": " + currentSpecialWordContent);
                         }
 
                         break;
