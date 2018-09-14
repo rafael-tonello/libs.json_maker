@@ -40,7 +40,7 @@ namespace JsonMaker
             this.parseJson(JsonString);
         }
 
-        private IJSONObject find(string objectName, bool autoCreateTree, IJSONObject currentParent)
+        private IJSONObject find(string objectName, bool autoCreateTree, IJSONObject currentParent, SOType forceType = SOType.Undefined)
         {
 
             //quebra o nome em um array
@@ -65,6 +65,9 @@ namespace JsonMaker
                         tempObj = new InMemoryJsonObject((InMemoryJsonObject)currentParent, currentParent.getRelativeName() + (currentParentRelativeName.Contains('.') ? "." : "") + currentName);
                     else
                         tempObj = new FileSystemJsonObject((FileSystemJsonObject)currentParent, currentParent.getRelativeName() + (currentParentRelativeName.Contains('.') ? "." : "") + currentName, (string)JsonObjectArguments);
+
+                    if (forceType != SOType.Undefined)
+                        tempObj.forceType(forceType);
 
                     currentParent.setChild(currentName, tempObj);
                 }
@@ -345,14 +348,14 @@ namespace JsonMaker
 
         #region json parser
 
-        public void fromJson(string json)
+        public void fromJson(string json, bool tryParseInvalidJson = false)
         {
-            this.parseJson(json);
+            this.parseJson(json, "", tryParseInvalidJson, SOType.Undefined);
         }
 
-        public void fromString(string json)
+        public void fromString(string json, bool tryParseInvalidJson = false)
         {
-            this.parseJson(json);
+            this.parseJson(json, "", tryParseInvalidJson, SOType.Undefined);
 
         }
 
@@ -361,7 +364,7 @@ namespace JsonMaker
         /// </summary>
         /// <param name="objectName">The json object name</param>
         /// <param name="value">The json string </param>
-        public void set(string objectName, string value)
+        public void set(string objectName, string value, SOType forceType = SOType.Undefined)
         {
             interfaceSemaphore.WaitOne();
 
@@ -370,16 +373,16 @@ namespace JsonMaker
                 if (!objectName.StartsWith("\""))
                     objectName = '"' + objectName + '"';
                 objectName = "{" + objectName + ":" + value + "}";
-                this.parseJson(objectName);
+                this.parseJson(objectName, "", false, forceType);
             }
             else
-                this.parseJson(value);
+                this.parseJson(value, "", false, forceType);
             interfaceSemaphore.Release();
 
         }
 
         private enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord }
-        public void parseJson(string json, string parentName = "")
+        public void parseJson(string json, string parentName = "", bool tryParseInvalidJson = false, SOType forceType = SOType.Undefined)
         {
             var currentObject = this.root;
             if (parentName != "")
@@ -446,7 +449,7 @@ namespace JsonMaker
                         if (curr == '"')
                         {
                             state = ParseStates.waitingKeyValueSep;
-                            currentObject = this.find(currentChildName.ToString(), true, currentObject);
+                            currentObject = this.find(currentChildName.ToString(), true, currentObject, forceType);
                             currentObject.name = currentChildName.ToString();
                             parentName = parentName + (parentName != "" ? "." : "") + currentChildName;
 
@@ -508,8 +511,8 @@ namespace JsonMaker
                         }
                         else if (!" \t\r\n".Contains(curr))
                         {
-                            //state = "Error.sitax";
-                            throw new Exception("SintaxError at line "+currLine + " and column "+currCol + ". Expected ' '(space), \t, \r or \n, but found "+curr+".");
+                            if(!tryParseInvalidJson)
+                                throw new Exception("SintaxError at line "+currLine + " and column "+currCol + ". Expected ' '(space), \t, \r or \n, but found "+curr+".");
                         }
                         break;
 
@@ -517,7 +520,7 @@ namespace JsonMaker
                         //state = "findingStart";
                         currentChildName.Clear();
                         currentChildName.Append(currentObject.__getChildsNames().Count.ToString());
-                        currentObject = this.find(currentChildName.ToString(), true, currentObject);
+                        currentObject = this.find(currentChildName.ToString(), true, currentObject, forceType);
                         currentObject.name = currentChildName.ToString();
                         parentName = parentName + (parentName != "" ? "." : "") + currentChildName;
                         state = ParseStates.findValueStart;
@@ -610,7 +613,10 @@ namespace JsonMaker
                                 state = ParseStates.findingStart;
                             }
                             else
-                                throw new Exception("Invalid simbol at line "+currLine + " and column "+currCol + ": " + currentSpecialWordContent);
+                            {
+                                if (!tryParseInvalidJson)
+                                    throw new Exception("Invalid simbol at line " + currLine + " and column " + currCol + ": " + currentSpecialWordContent);
+                            }
                         }
 
                         break;
@@ -774,7 +780,7 @@ namespace JsonMaker
                 return temp.getJSONType();
             }
             else
-                return SOType.Null;
+                return SOType.Undefined;
         }
 
         /// <summary>
@@ -805,12 +811,12 @@ namespace JsonMaker
         /// </summary>
         /// <param name="name">The property object name </param>
         /// <param name="value">The value</param>
-        public void setString(string name, string value)
+        public void setString(string name, string value, bool tryDefineType = false)
         {
             if (value == null)
                 value = "";
             value = value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
-            this.set(name, '"' + value + '"');
+            this.set(name, '"' + value + '"', tryDefineType ? SOType.Undefined : SOType.String);
         }
 
         /// <summary>
@@ -914,17 +920,17 @@ namespace JsonMaker
         /// </summary>
         /// <param name="name">The property object name </param>
         /// <param name="value">The value</param>
-        public void setDateTime(string name, DateTime value, string format = "")
+        public void setDateTime(string name, DateTime value, string format = "", bool forceType = false)
         {
             string newV = "";
             if (format != "")
                 newV = value.ToString(format);
             else
                 newV = value.ToString();
-            this.set(name, '"' + newV + '"');
+            this.set(name, '"' + newV + '"', forceType ? SOType.DateTime : SOType.Undefined);
         }
 
-        public void setDateTime_ISOFormat(string name, DateTime value, TimeSpan offset)
+        public void setDateTime_ISOFormat(string name, DateTime value, TimeSpan offset, bool forceType = false)
         {
             if (offset.Equals(TimeSpan.MinValue))
             {
@@ -937,12 +943,12 @@ namespace JsonMaker
             else if (timeZone[0] != '-')
                 timeZone = "+" + timeZone;
 
-            this.setDateTime(name, value, "yyyy-MM-ddTHH:mm:ss" + timeZone);
+            this.setDateTime(name, value, "yyyy-MM-ddTHH:mm:ss" + timeZone, forceType);
         }
 
-        public void setDateTime_ISOFormat(string name, DateTime value)
+        public void setDateTime_ISOFormat(string name, DateTime value, bool forceType = false)
         {
-            setDateTime_ISOFormat(name, value, TimeSpan.MinValue);
+            setDateTime_ISOFormat(name, value, TimeSpan.MinValue, forceType);
         }
 
         /// <summary>
@@ -993,6 +999,7 @@ namespace JsonMaker
             foreach (var att in text)
                 if (chars.Contains(att))
                     ret.Append(att); return ret.ToString();
+            
         }
 
         private string __unescapeString(string data)

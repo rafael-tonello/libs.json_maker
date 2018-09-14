@@ -4,11 +4,12 @@ using System.Text;
 
 namespace JsonMaker
 {
-    public enum SOType { Null, String, DateTime, Int, Double, Boolean, __Object, __Array }
+    public enum SOType { Null, String, DateTime, Int, Double, Boolean, __Object, __Array, Undefined}
     public abstract class IJSONObject
     {
         public IJSONObject parent;
         public string name;
+        protected SOType forcedType = SOType.Undefined;
 
         public abstract void clear();
         public abstract void delete(string name);
@@ -33,6 +34,12 @@ namespace JsonMaker
         public abstract void setChild(string name, IJSONObject child);
         public abstract void setSingleValue(string value);
         protected abstract string serializeSingleValue();
+
+
+        public virtual void forceType(SOType forcedType)
+        {
+            this.forcedType = forcedType;
+        }
         public virtual string ToJson(bool quotesOnNames, bool format = false, int level = 0)
         {
             StringBuilder result = new StringBuilder();
@@ -65,7 +72,7 @@ namespace JsonMaker
                     else
                     {
                         if (quotesOnNames)
-                            result.Append('"' + childsNames[cont] + "\":" + current.ToJson(quotesOnNames, format, level));
+                            result.Append('"' + childsNames[cont]+ "\":" + current.ToJson(quotesOnNames, format, level));
                         else
                             result.Append(childsNames[cont] + ":" + current.ToJson(quotesOnNames, format, level));
                     }
@@ -110,6 +117,9 @@ namespace JsonMaker
             double sucess2;
             DateTime sucess3;
 
+            if (forcedType != SOType.Undefined)
+                return forcedType;
+
             //trye as null
             if ((value == null) || (value == "null") || (value == ""))
                 return SOType.Null;
@@ -122,7 +132,7 @@ namespace JsonMaker
                 {
                     //try as int
                     //Note: In json, numbers can'r start with 0
-                    if ((value != "") && ("123456789+-".Contains(value[0] + "")) && (int.TryParse(value, out sucess)))
+                    if ((value != "") && ("123456789+-".Contains(value[0]+"")) && (int.TryParse(value, out sucess)))
                         return SOType.Int;
                     else
                     {
