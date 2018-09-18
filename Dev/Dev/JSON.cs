@@ -1002,6 +1002,37 @@ namespace JsonMaker
             
         }
 
+        public List<string> searchObjects(string searchBy, bool useContains = false)
+        {
+            List<string> result = new List<string>();
+
+            var names = this.getObjectsNames("");
+            names.Add("");
+            string temp;
+            foreach (var c in names)
+            {
+                if (c.Contains('.'))
+                    temp = c.Substring(c.LastIndexOf('.')+1);
+                else
+                    temp = c;
+
+                if ((temp.ToLower() == searchBy.ToLower()) || (useContains && temp.ToLower().Contains(searchBy.ToLower())))
+                    result.Add(c);
+            }
+
+            return result;
+        }
+
+        public string searchFirst(string searchBy, bool useContains = false)
+        {
+            var names = searchObjects(searchBy, useContains);
+            string ret = "";
+            if (names.Count > 0)
+                ret = names[0];
+            names.Clear();
+            return ret;
+        }
+
         private string __unescapeString(string data)
         {
             //result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
