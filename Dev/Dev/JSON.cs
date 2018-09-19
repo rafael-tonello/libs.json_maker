@@ -18,7 +18,6 @@ namespace JsonMaker
 
         object JsonObjectArguments;
 
-
         public void clear()
         {
             root.clear();
