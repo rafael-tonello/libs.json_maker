@@ -397,8 +397,8 @@ namespace JsonMaker
             StringBuilder currentSpecialWordContent = new StringBuilder();
             StringBuilder currentChildName = new StringBuilder();
 
-            int currLine = 0;
-            int currCol = 0;
+            int currLine = 1;
+            int currCol = 1;
 
             int max = json.Length;
             char curr = ' ';
@@ -410,7 +410,7 @@ namespace JsonMaker
                 currCol++;
                 if (curr == '\n')
                 {
-                    currCol = 0;
+                    currCol = 1;
                     currLine++;
                 }
 
@@ -1036,38 +1036,38 @@ namespace JsonMaker
         private string __unescapeString(string data)
         {
             //result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
-            string nValue = "";
+            StringBuilder nValue = new StringBuilder();
             int cont;
             for (cont = 0; cont < data.Length - 1; cont++)
             {
                 if (data[cont] == '\\')
                 {
                     if (data[cont + 1] == '\"')
-                        nValue += '\"';
+                        nValue.Append('\"');
                     else if (data[cont + 1] == '\r')
-                        nValue += '\r';
+                        nValue.Append('\r');
                     else if (data[cont + 1] == '\n')
-                        nValue += '\n';
+                        nValue.Append('\n');
                     else if (data[cont + 1] == '\t')
-                        nValue += '\t';
+                        nValue.Append('\t');
                     else if (data[cont + 1] == '\\')
-                        nValue += '\\';
+                        nValue.Append('\\');
                     else
-                        nValue += '?';
+                        nValue.Append('?');
 
                     cont++;
                 }
                 else
-                    nValue += data[cont];
+                    nValue.Append(data[cont]);
 
                 //cont++;
 
 
             }
             if (cont < data.Length)
-                nValue = nValue + data[cont];
+                nValue.Append(data[cont]);
 
-            return nValue;
+            return nValue.ToString();
         }
 
         public void Dispose()
