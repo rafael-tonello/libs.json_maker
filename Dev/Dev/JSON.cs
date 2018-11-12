@@ -435,7 +435,8 @@ namespace JsonMaker
                             if (parentName.Contains('.'))
                             {
                                 parentName = parentName.Substring(0, parentName.LastIndexOf('.'));
-                                currentObject = currentObject.parent;
+                                if (currentObject != null)
+                                    currentObject = currentObject.parent;
                             }
                             else
                             {
