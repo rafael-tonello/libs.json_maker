@@ -9,17 +9,15 @@ namespace JsonMaker
 {
     class FileSystemJsonObject : IJSONObject
     {
-        string baseFolder = "";
+        private IJSONObject modelObject;
+        public string baseFolder = "";
         string fileName = "";
-
         string relativeName;
 
-        public FileSystemJsonObject(FileSystemJsonObject parent, string relativeName, string arguments)
+        public override void Initialize(IJSONObject pParent, string relativeName, IJSONObject modelObject)
         {
-            /*if (parent != null)
-                this.baseFolder = parent.__getBaseFolder();
-            else*/
-            this.baseFolder = arguments;
+            this.modelObject = modelObject;
+            this.baseFolder = ((FileSystemJsonObject)modelObject).baseFolder;
             this.baseFolder = this.baseFolder.Replace("\\", "/");
 
             if (this.baseFolder[this.baseFolder.Length - 1] == '/')
@@ -140,7 +138,9 @@ namespace JsonMaker
 
         public override IJSONObject __getChild(string name)
         {
-            return new FileSystemJsonObject(this, this.relativeName + "." + name, this.baseFolder);
+            var ret = new FileSystemJsonObject();
+            ret.Initialize(this, this.relativeName + "." + name, this.modelObject);
+            return ret;
         }
 
         public override string getRelativeName()

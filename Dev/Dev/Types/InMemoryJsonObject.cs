@@ -13,7 +13,7 @@ namespace JsonMaker
         private string singleValue;
         public string relativeName = "";
 
-        public InMemoryJsonObject(InMemoryJsonObject pParent, string relativeName)
+        public override void Initialize(IJSONObject pParent, string relativeName, IJSONObject modelObject)
         {
             this.relativeName = relativeName;
             this.parent = pParent;

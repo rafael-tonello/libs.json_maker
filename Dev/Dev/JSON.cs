@@ -11,31 +11,31 @@ namespace JsonMaker
 {
     public class JSON : IDisposable
     {
-
-        public enum JsonType { Memory, File }
-
         private IJSONObject root;
-
-        object JsonObjectArguments;
+        
+        private IJSONObject modelObject;
 
         public void clear()
         {
             root.clear();
         }
 
-        private void internalInitialize(JsonType type, object arguments)
+        private void internalInitialize(IJSONObject _modelObject = null)
         {
-            JsonObjectArguments = arguments;
-            if (type == JsonType.Memory)
-                root = new InMemoryJsonObject(null, "");
-            else
-                root = new FileSystemJsonObject(null, "", (string)JsonObjectArguments);
+            if (_modelObject == null)
+                _modelObject = new InMemoryJsonObject();
+            
+            this.modelObject = _modelObject;
+            
+            root = (IJSONObject)Activator.CreateInstance(this.modelObject.GetType());
+            
+            root.Initialize(null, "", this.modelObject);
         }
 
-        public JSON(JsonType type = JsonType.Memory, object arguments = null) { this.internalInitialize(type, arguments); }
-        public JSON(string JsonString, JsonType type = JsonType.Memory, object arguments = null)
+        public JSON(IJSONObject _modelObject = null) { this.internalInitialize(_modelObject); }
+        public JSON(string JsonString, IJSONObject _modelObject = null, object arguments = null)
         {
-            this.internalInitialize(type, arguments);
+            this.internalInitialize(_modelObject);
             this.parseJson(JsonString);
         }
 
@@ -60,11 +60,14 @@ namespace JsonMaker
                 {
                     IJSONObject tempObj;
                     string currentParentRelativeName = currentParent.getRelativeName();
-                    if (currentParent is InMemoryJsonObject)
+                    
+                    /*if (currentParent is InMemoryJsonObject)
                         tempObj = new InMemoryJsonObject((InMemoryJsonObject)currentParent, currentParent.getRelativeName() + (currentParentRelativeName.Contains('.') ? "." : "") + currentName);
                     else
-                        tempObj = new FileSystemJsonObject((FileSystemJsonObject)currentParent, currentParent.getRelativeName() + (currentParentRelativeName.Contains('.') ? "." : "") + currentName, (string)JsonObjectArguments);
-
+                        tempObj = new FileSystemJsonObject((FileSystemJsonObject)currentParent, currentParent.getRelativeName() + (currentParentRelativeName.Contains('.') ? "." : "") + currentName, (string)JsonObjectArguments);*/
+                    tempObj = (IJSONObject)Activator.CreateInstance(currentParent.GetType());
+                    tempObj.Initialize(currentParent, currentParent.getRelativeName(), this.modelObject);
+                    
                     if (forceType != SOType.Undefined)
                         tempObj.forceType(forceType);
 

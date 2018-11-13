@@ -9,9 +9,16 @@ namespace JsonMaker
     {
         public IJSONObject parent;
         public string name;
+        
         protected SOType forcedType = SOType.Undefined;
 
+        
         public abstract void clear();
+        
+        //ModelObject is the IJsonObject used to initialize the JSON library (can be used to get types and first object arguments)
+        public abstract void Initialize(IJSONObject pParent, string relativeName, IJSONObject modelObject);
+        
+        //delete a child
         public abstract void delete(string name);
         public abstract SOType getJSONType();
         public abstract string getRelativeName();
