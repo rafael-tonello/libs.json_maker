@@ -137,7 +137,10 @@ namespace JsonMaker
                 if (temp != this.keyName)
                 {
                     if (temp.Length > this.keyName.Length)
-                        temp = temp.Substring(this.keyName.Length + 1);
+                        temp = temp.Substring(this.keyName.Length);
+                    
+                    if (temp != "" && temp[0] == '.')
+                        temp = temp.Substring(1);
                 
                     if (temp.Contains("."))
                         temp = temp.Substring(0, temp.IndexOf('.'));
@@ -155,7 +158,8 @@ namespace JsonMaker
 
         protected override string serializeSingleValue()
         {
-            string ret = "";
+            string ret = "null";
+            
             
             string whereClausule = "'" + this.keyName + "'";
             
@@ -163,11 +167,16 @@ namespace JsonMaker
             var reader = command.ExecuteReader();
             if (reader.Read())
             {
+                var raw = reader.GetValue(0);
                 ret = reader.GetValue(0).ToString();
+                
+                if (raw is string)
+                    ret = '"' + ret + '"';
             }
             
             reader.Close();
             command.Dispose();
+            
             return ret;
         }
 
