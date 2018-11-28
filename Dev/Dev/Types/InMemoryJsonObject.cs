@@ -89,17 +89,39 @@ namespace JsonMaker
             return result;
         }
 
-        public override IJSONObject __getChild(string name)
+        public override IJSONObject __getChild(string name, bool caseSensitive = true)
         {
-            if (childs.ContainsKey(name))
-                return childs[name];
+            if (caseSensitive)
+            {
+                if (childs.ContainsKey(name))
+                    return childs[name];
+            }
             else
-                return null;
+            {
+                name = name.ToLower();
+                foreach (var c in childs)
+                    if (c.Key.ToLower() == name)
+                        return c.Value;
+            }
+            
+            return null;
         }
 
-        public override bool __containsChild(string name)
+        public override bool __containsChild(string name, bool caseSensitive = false)
         {
-            return this.childs.ContainsKey(name);
+            if (caseSensitive)
+            {
+                return this.childs.ContainsKey(name);
+            }
+            else
+            {
+                name = name.ToLower();
+                foreach (var c in childs)
+                    if (c.Key.ToLower() == name)
+                        return true;
+
+                return false;
+            }
         }
 
         public override string getRelativeName()

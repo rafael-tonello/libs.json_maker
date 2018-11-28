@@ -109,8 +109,8 @@ namespace JsonMaker
             else
                 return serializeSingleValue();
         }
-        public abstract bool __containsChild(string name);
-        public abstract IJSONObject __getChild(string name);
+        public abstract bool __containsChild(string name, bool caseSensitive = false);
+        public abstract IJSONObject __getChild(string name, bool caseSensitive = true);
         public abstract List<string> __getChildsNames();
 
         //indicates to JSON if the object can be deleted after use. In Memory, for example, JSONObject could not be deleted, because its is used in a 

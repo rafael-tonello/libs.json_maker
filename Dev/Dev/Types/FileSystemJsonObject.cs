@@ -98,10 +98,11 @@ namespace JsonMaker
             File.WriteAllText(this.fileName, value);
         }
 
-        public override bool __containsChild(string name)
+        public override bool __containsChild(string name, bool caseSensitive = false)
         {
             name = this.fileName + "/" + name;
             return Directory.Exists(name) || File.Exists(name);
+
         }
 
         public override List<string> __getChildsNames()
@@ -136,7 +137,7 @@ namespace JsonMaker
                 return "";
         }
 
-        public override IJSONObject __getChild(string name)
+        public override IJSONObject __getChild(string name, bool caseSensitive = true)
         {
             var ret = new FileSystemJsonObject();
             ret.Initialize(this, this.relativeName + "." + name, this.modelObject);

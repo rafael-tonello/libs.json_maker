@@ -11,6 +11,7 @@ namespace JsonMaker
 {
     public class JSON : IDisposable
     {
+        private bool caseSensitiveToFind = true;
         private IJSONObject root;
         
         private IJSONObject modelObject;
@@ -32,9 +33,14 @@ namespace JsonMaker
             root.Initialize(null, "", this.modelObject);
         }
 
-        public JSON(IJSONObject _modelObject = null) { this.internalInitialize(_modelObject); }
-        public JSON(string JsonString, IJSONObject _modelObject = null, object arguments = null)
+        public JSON(bool caseSensitiveToFind = true, IJSONObject _modelObject = null)
         {
+            this.caseSensitiveToFind = caseSensitiveToFind;
+            this.internalInitialize(_modelObject);
+        }
+        public JSON(string JsonString, bool caseSensitiveToFind = true, IJSONObject _modelObject = null)
+        {
+            this.caseSensitiveToFind = caseSensitiveToFind;
             this.internalInitialize(_modelObject);
             this.parseJson(JsonString);
         }
@@ -54,7 +60,7 @@ namespace JsonMaker
                 childsNames = objectName.Substring(objectName.IndexOf('.') + 1);
             }
 
-            if (!(currentParent.__containsChild(currentName)))
+            if (!(currentParent.__containsChild(currentName, this.caseSensitiveToFind)))
             {
                 if (autoCreateTree)
                 {
@@ -80,7 +86,7 @@ namespace JsonMaker
             }
 
 
-            childOnParent = currentParent.__getChild(currentName);
+            childOnParent = currentParent.__getChild(currentName, this.caseSensitiveToFind);
 
 
             if (childsNames == "")
