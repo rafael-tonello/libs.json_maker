@@ -145,7 +145,7 @@ namespace JsonMaker
                     {
                         //try as double
                         //Note: In json, numbers can'r start with 0
-                        if ((value != "") && ("123456789+-.".Contains(value[0] + "")) && (double.TryParse(value, out sucess2)))
+                        if ((value != "") && ("123456789+-.,".Contains(value[0] + "")) && (double.TryParse(value.Replace(",", System.Globalization.CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator).Replace(".", System.Globalization.CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalSeparator), out sucess2)))
                             return SOType.Double;
                         else if ((value.Contains(":")) && (DateTime.TryParse(value.Replace("\"", ""), out sucess3)))
                         {
