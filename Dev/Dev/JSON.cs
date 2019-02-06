@@ -389,6 +389,21 @@ namespace JsonMaker
 
         }
 
+        public void setDyanimc(string objectName, object value)
+        {
+            if (value is string)
+                this.setString(objectName, (string)value);
+            else if (value is bool)
+                this.setBoolean(objectName, (bool)value);
+            else if ((value is int) || (value is Int64) || (value is Int16) || (value is UInt16) || (value is UInt64) || (value is uint) || (value is byte) || (value is long) || (value is ulong))
+                this.set(objectName, value.ToString(), SOType.Int);
+            else if ((value is double) || (value is float))
+                this.setDouble(objectName, (double)value);
+            else if (value is DateTime)
+                this.setDateTime(objectName, (DateTime)value);
+
+        }
+
         private enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord }
         public void parseJson(string json, string parentName = "", bool tryParseInvalidJson = false, SOType forceType = SOType.Undefined)
         {
@@ -489,7 +504,7 @@ namespace JsonMaker
                             cont--;
                             currCol--;
                         }
-                        else if ("untf".Contains(curr))
+                        else if ("untf".Contains((curr+"").ToLower()))
                         {
                             state = ParseStates.readingContentSpecialWord;
                             currentSpecialWordContent.Clear();
@@ -594,11 +609,11 @@ namespace JsonMaker
 
                         break;
                     case ParseStates.readingContentSpecialWord:
-                        if ("truefalseundefindednul".Contains(curr))
+                        if ("truefalseundefindednul".Contains((curr+"").ToLower()))
                             currentSpecialWordContent.Append(curr);
                         else
                         {
-                            string strTemp = currentSpecialWordContent.ToString();
+                            string strTemp = currentSpecialWordContent.ToString().ToLower();
                             if ((strTemp == "true") ||
                                 (strTemp == "false") ||
                                 (strTemp == "null") ||
@@ -820,12 +835,12 @@ namespace JsonMaker
         /// </summary>
         /// <param name="name">The property object name </param>
         /// <param name="value">The value</param>
-        public void setString(string name, string value, bool tryDefineType = false)
+        public void setString(string name, string value, bool tryRedefineType = false)
         {
-            if (value == null)
-                value = "";
+            //if (value == null)
+                //value = "";
             value = value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
-            this.set(name, '"' + value + '"', tryDefineType ? SOType.Undefined : SOType.String);
+            this.set(name, '"' + value + '"', tryRedefineType ? SOType.Undefined : SOType.String);
         }
 
         /// <summary>
@@ -849,7 +864,7 @@ namespace JsonMaker
         /// <param name="value">The value</param>
         public void setInt(string name, int value)
         {
-            this.set(name, value.ToString());
+            this.set(name, value.ToString(), SOType.Int);
         }
 
         /// <summary>
@@ -873,7 +888,7 @@ namespace JsonMaker
         /// <param name="value">The value</param>
         public void setInt64(string name, Int64 value)
         {
-            this.set(name, value.ToString());
+            this.set(name, value.ToString(), SOType.Int);
         }
 
         /// <summary>
@@ -902,7 +917,7 @@ namespace JsonMaker
         /// <param name="value">The value</param>
         public void setBoolean(string name, bool value)
         {
-            this.set(name, value.ToString().ToLower());
+            this.set(name, value.ToString().ToLower(), SOType.Boolean);
         }
 
         /// <summary>

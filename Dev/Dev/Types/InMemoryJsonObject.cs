@@ -47,7 +47,7 @@ namespace JsonMaker
                 if ((this.singleValue.Length > 0) && (this.singleValue[0] != '"'))
                     return '"' + this.singleValue + '"';
                 else
-                    return this.singleValue;
+                    return "\"\"";
             }
             else if (this.type == SOType.Double)
             {
