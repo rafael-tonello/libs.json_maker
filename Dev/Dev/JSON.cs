@@ -1098,6 +1098,28 @@ namespace JsonMaker
         {
             this.clear();
         }
+		
+		public static JSON Parse(string data)
+        {
+            return new JSON(data);
+        }
+
+        public static bool TryParse(string data, out JSON output)
+        {
+            JSON temp = new JSON();
+            try
+            {
+                temp.parseJson(data);
+                output = temp;
+                return true;
+            }
+            catch
+            {
+                try { temp.Dispose(); } catch { }
+            }
+            output = null;
+            return false;
+        }
 
     }
 }
