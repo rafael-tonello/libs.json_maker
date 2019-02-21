@@ -10,9 +10,9 @@ A C++ and C# library to create JSON using javascript notation:
 
 ## C++ 
 
-*the c ++ version is out of date but will be updated soon`/  
-/  
-/  
+* the c ++ version is out of date but will be updated soon
+
+
 `JSON *jm = new JSON();`<br/>
 `jm->setString("MyObject.Child.Child2.property", "example");`<br/>
 `cout << jm.ToString());`<br/>
