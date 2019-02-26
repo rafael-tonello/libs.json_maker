@@ -195,9 +195,23 @@ namespace JsonMaker
         /// <param name="toImport">Json to be imported</param>
         public void set(string objectName, JSON toImport)
         {
+
             if (objectName != "")
+            {
+                if (!objectName.StartsWith("\""))
+                    objectName = '"' + objectName + '"';
+                objectName = "{" + objectName + ":" + toImport.ToJson() + "}";
+                this.parseJson(objectName, "");
+            }
+            else
+            {
+                this.parseJson(toImport.ToJson());
+            }
+
+
+            /*if (objectName != "")
                 objectName = objectName + ":";
-            this.parseJson(objectName + toImport.ToJson());
+            this.parseJson(objectName + toImport.ToJson());*/
 
         }
 
@@ -401,6 +415,8 @@ namespace JsonMaker
                 this.setDouble(objectName, (double)value);
             else if (value is DateTime)
                 this.setDateTime(objectName, (DateTime)value);
+            else if (value is JSON)
+                this.set(objectName, (JSON)value);
 
         }
 
