@@ -414,7 +414,7 @@ namespace JsonMaker
             else if ((value is double) || (value is float))
                 this.setDouble(objectName, (double)value);
             else if (value is DateTime)
-                this.setDateTime(objectName, (DateTime)value);
+                this.setDateTime_ISOFormat(objectName, (DateTime)value);
             else if (value is JSON)
                 this.set(objectName, (JSON)value);
 

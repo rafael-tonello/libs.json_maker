@@ -139,7 +139,7 @@ namespace JsonMaker
                 {
                     //try as int
                     //Note: In json, numbers can'r start with 0
-                    if ((value != "") && ("123456789+-".Contains(value[0]+"")) && (int.TryParse(value, out sucess)))
+                    if ((value != "") && ("0123456789+-".Contains(value[0]+"")) && (int.TryParse(value, out sucess)))
                         return SOType.Int;
                     else
                     {
