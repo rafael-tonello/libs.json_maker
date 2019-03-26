@@ -50,6 +50,11 @@ namespace JsonMaker
 
             //quebra o nome em um array
             objectName = objectName.Replace("]", "").Replace("[", ".");
+
+            //remove '.' from start (like when lib is used with json.set("[0].foo")
+            while (objectName != "" && objectName[0] == '.')
+                objectName = objectName.Substring(1);
+
             string currentName = objectName;
             string childsNames = "";
             IJSONObject childOnParent;
@@ -388,17 +393,30 @@ namespace JsonMaker
         /// <param name="value">The json string </param>
         public void set(string objectName, string value, SOType forceType = SOType.Undefined)
         {
+
+
+
             interfaceSemaphore.WaitOne();
 
-            if (objectName != "")
-            {
-                if (!objectName.StartsWith("\""))
-                    objectName = '"' + objectName + '"';
-                objectName = "{" + objectName + ":" + value + "}";
-                this.parseJson(objectName, "", false, forceType);
-            }
-            else
-                this.parseJson(value, "", false, forceType);
+             //if (objectName != "")
+            //{
+                if (isAJson(value))
+                {
+                    this.parseJson(value, objectName);
+                }
+                else
+                {
+                    var found = this.find(objectName, true, this.root);
+                    found.setSingleValue(value);
+                }
+
+              //  if (!objectName.StartsWith("\""))
+              //      objectName = '"' + objectName + '"';
+              //  objectName = "{" + objectName + ":" + value + "}";
+              //  this.parseJson(objectName, "", false, forceType);
+            //}
+            //else
+            //    this.parseJson(value, "", false, forceType);
             interfaceSemaphore.Release();
 
         }
@@ -918,7 +936,7 @@ namespace JsonMaker
             string temp = this.get(name);
             if (temp != "")
             {
-                if (temp.ToLower() == "true")
+                if ((temp.ToLower() == "true") || (temp == "1"))
                     return true;
                 else
                     return false;

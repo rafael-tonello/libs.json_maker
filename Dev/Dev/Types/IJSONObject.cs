@@ -36,7 +36,7 @@ namespace JsonMaker
                     return false;
                 cont++;
             }
-            return true;
+            return true || (childsNames.Count > 0);
         }
         public abstract void setChild(string name, IJSONObject child);
         public abstract void setSingleValue(string value);
