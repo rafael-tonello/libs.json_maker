@@ -44,8 +44,12 @@ namespace JsonMaker
                 return ((this.singleValue.ToLower() == "true") || (this.singleValue == "1")) ? "true" : "false";
             else if ((this.type == SOType.String) || (this.type == SOType.DateTime))
             {
-                if ((this.singleValue.Length > 0) && (this.singleValue[0] != '"'))
-                    return '"' + this.singleValue + '"';
+                if (this.singleValue.Length > 0)
+                    if (this.singleValue[0] != '"')
+                        return '"' + this.singleValue + '"';
+                    else
+                        return this.singleValue;
+
                 else
                     return "\"\"";
             }

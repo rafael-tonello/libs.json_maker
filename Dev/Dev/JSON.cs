@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -400,6 +401,7 @@ namespace JsonMaker
 
              //if (objectName != "")
             //{
+                
                 if (isAJson(value))
                 {
                     this.parseJson(value, objectName);
@@ -871,10 +873,13 @@ namespace JsonMaker
         /// <param name="value">The value</param>
         public void setString(string name, string value, bool tryRedefineType = false)
         {
-            //if (value == null)
-                //value = "";
-            value = value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
-            this.set(name, '"' + value + '"', tryRedefineType ? SOType.Undefined : SOType.String);
+            if (isAJson(value))
+                this.parseJson(value, name);
+            else
+            {
+                value = value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t");
+                this.set(name, '"' + value + '"', tryRedefineType ? SOType.Undefined : SOType.String);
+            }
         }
 
         /// <summary>
@@ -962,7 +967,7 @@ namespace JsonMaker
         /// <returns></returns>
         public DateTime getDateTime(string name, string format = "")
         {
-            string temp = getOnly(this.get(name), "0123456789/-: TU");
+            string temp = getOnly(this.get(name), "0123456789/-: TUZ.");
             if (temp != "")
                 if (format != "")
                     return DateTime.ParseExact(temp, format, System.Globalization.CultureInfo.InvariantCulture);
@@ -1017,7 +1022,7 @@ namespace JsonMaker
         /// <returns></returns>
         public double getDouble(string name, double defaultValue = 0)
         {
-            string temp = getOnly(this.get(name).Replace('.', ','), "0123456789-,");
+            string temp = getOnly(this.get(name).Replace(',', '.'), "0123456789-.").Replace(".", CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator);
             if (temp != null)
                 return double.Parse(temp);
             else return defaultValue;
@@ -1157,4 +1162,3 @@ namespace JsonMaker
 
     }
 }
-
