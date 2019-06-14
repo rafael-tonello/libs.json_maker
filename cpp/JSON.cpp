@@ -29,7 +29,7 @@ namespace JsonMaker{
     }
 
     map<string, IJSONObject*>::const_iterator getChildByIndex (map<string, IJSONObject*> *maptosearch, int index, bool *sucess){
-        map<string, IJSONObject*>::const_iterator end = (*maptosearch).end(); 
+        map<string, IJSONObject*>::const_iterator end = (*maptosearch).end();
 
         int counter = 0;
         for (map<string, IJSONObject*>::const_iterator it = (*maptosearch).begin(); it != end; ++it) {
@@ -120,16 +120,42 @@ namespace JsonMaker{
 }
 
 namespace JsonMaker{
-	
+
 	//IJSONObject
 
-    string IJSONObject::ToJson(bool quotesOnNames, bool format, int level)
+
+    bool IJSONObject::isArray()
+    {
+        int temp = 0;
+        bool sucess;
+
+
+		vector<string> childsNames = this->__getChildsNames();
+		if (childsNames.size() == 0)
+			return false;
+
+        int cont = 0;
+        while (cont < childsNames.size())
+        {
+            if (getOnly(childsNames[cont], "0123456789") != childsNames[cont])
+                return false;
+            cont++;
+        }
+        return childsNames.size() > 0;
+    }
+
+	void IJSONObject::forceType(SOType forcedType)
+	{
+		this->forcedType = forcedType;
+	}
+
+	string IJSONObject::ToJson(bool quotesOnNames, bool format, int level)
     {
         stringstream result;
-        
-		
+
+
 		vector<string> childsNames = this->__getChildsNames();
-		
+
         if (childsNames.size() > 0)
         {
             bool array = this->isArray();
@@ -138,7 +164,7 @@ namespace JsonMaker{
             else
                 result << "{";
 
-            
+
             if (format)
                 result << "\r\n";
 
@@ -149,7 +175,7 @@ namespace JsonMaker{
                 if (format)
                     for (int a = 0; a < level; a++)
                         result << "    ";
-				
+
                 auto current = this->__getChild(childsNames[cont]);
                 if (array)
 				{
@@ -184,7 +210,7 @@ namespace JsonMaker{
                 result << "]";
             else
                 result << "}";
-            
+
 
             return result.str();
         }
@@ -194,25 +220,6 @@ namespace JsonMaker{
         }
     }
 
-    bool IJSONObject::isArray()
-    {
-        int temp = 0;
-        bool sucess;
-
-
-		vector<string> childsNames = this->__getChildsNames();
-		if (childsNames.size() == 0)
-			return false;
-		
-        int cont = 0;
-        while (cont < childsNames.size())
-        {
-            if (getOnly(childsNames[cont], "0123456789") != childsNames[cont])
-                return false;
-            cont++;
-        }
-        return true;
-    }
 
 	SOType IJSONObject::__determineSoType(string value)
 	{
@@ -249,29 +256,28 @@ namespace JsonMaker{
                 }
             }
         }
-		
+
 	}
 }
 
 namespace JsonMaker{
 	//InMemoryJsonObject
-	
-	InMemoryJsonObject::InMemoryJsonObject(InMemoryJsonObject *pParent, string relativeName)
-    {
+	void InMemoryJsonObject::Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject)
+	{
 		this->relativeName = relativeName;
         this->parent = pParent;
     }
-	
+
 	void InMemoryJsonObject::setChild(string name, IJSONObject *child)
     {
         this->childs[name] = child;
     }
-	
+
 	void InMemoryJsonObject::del(string name)
     {
         this->childs.erase(name);
     }
-	
+
 	void InMemoryJsonObject::clear()
     {
         for (const auto& curr : this->childs) {
@@ -281,35 +287,38 @@ namespace JsonMaker{
         this->singleValue.clear();
         this->childs.clear();
     }
-	
+
     string InMemoryJsonObject::serializeSingleValue()
     {
-        if (this->type == SOType::Null)
-            return "null";
-        else if (this->type == SOType::Boolean)
+		if (this->type == SOType::Null)
+			return "null";
+		else if (this->type == SOType::Boolean)
 		{
 			string temp = this->singleValue;
 			std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
-			
-            temp =  ((temp == "true") || (temp == "1")) ? "true" : "false";
+
+			temp =  ((temp == "true") || (temp == "1")) ? "true" : "false";
 			return temp;
 		}
-        else if (this->type == SOType::String)
-        {
-            if ((this->singleValue.size() > 0) && (this->singleValue[0] != '"'))
-                return '"' + this->singleValue + '"';
-            else
-                return this->singleValue;
-        }
-        else if (this->type == SOType::Double)
-        {
-            std::replace( this->singleValue.begin(), this->singleValue.end(), ',', '.'); // replace all 'x' to 'y'
-            return this->singleValue;
-        }
-        else
-            return this->singleValue;
+		else if (this->type == SOType::String)
+		{
+			if (this->singleValue.size() > 0)
+				if (this->singleValue[0] != '"')
+					return '"' + this->singleValue + '"';
+				else
+					return this->singleValue;
+			else
+				return "\"\"";
+		}
+		else if (this->type == SOType::Double)
+		{
+			std::replace( this->singleValue.begin(), this->singleValue.end(), ',', '.'); // replace all 'x' to 'y'
+			return this->singleValue;
+		}
+		else
+			return this->singleValue;
     }
-    
+
 	SOType InMemoryJsonObject::getJSONType()
     {
         if (this->childs.size() > 0)
@@ -321,7 +330,7 @@ namespace JsonMaker{
 		}
 		return this->type;
     }
-	
+
     void InMemoryJsonObject::setSingleValue(string value)
     {
         this->type = this->__determineSoType(value);
@@ -329,7 +338,7 @@ namespace JsonMaker{
 		if (this->type != SOType::Null)
 			this->singleValue = value;
     }
-	
+
 	vector<string> InMemoryJsonObject::__getChildsNames()
 	{
 		vector<string> result;
@@ -340,31 +349,69 @@ namespace JsonMaker{
 			if (sucess)
 				result.push_back(current->first);
 		}
-		
+
 		return result;
 	}
-	
-	IJSONObject* InMemoryJsonObject::__getChild(string name)
+
+	IJSONObject* InMemoryJsonObject::__getChild(string name, bool caseSensitive)
     {
-        if (this->childs.find(name) != this->childs.end())
-            return childs[name];
-        else
-            return NULL;
+        bool sucess;
+        if (caseSensitive)
+		{
+			if (this->childs.find(name) != this->childs.end())
+				return this->childs[name];
+		}
+		else{
+			std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+			for (int cont = 0; cont < this->childs.size(); cont++)
+			{
+				auto current = getChildByIndex(&(this->childs), cont, &sucess);
+				if (!sucess)
+                    return NULL;
+				string currName = current-> first;
+				std::transform(currName.begin(), currName.end(), currName.begin(), ::tolower);
+				if (name == currName)
+					return current->second;
+			}
+		}
+
+		return NULL;
     }
-	
-	bool InMemoryJsonObject::__containsChild(string name)
+
+	bool InMemoryJsonObject::__containsChild(string name, bool caseSensitive)
 	{
-		if (this->childs.find(name) != this->childs.end())
-            return true;
-        else
-            return false;
+        bool sucess;
+		if (caseSensitive)
+		{
+			if (this->childs.find(name) != this->childs.end())
+				return true;
+			else
+				return false;
+		}
+		else{
+			std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+			for (int cont = 0; cont < this->childs.size(); cont++)
+			{
+				auto current = getChildByIndex(&(this->childs), cont, &sucess);
+				if (!sucess)
+                    return false;
+
+				string currName = current-> first;
+				std::transform(currName.begin(), currName.end(), currName.begin(), ::tolower);
+				if (name == currName)
+					return true;
+			}
+
+			return false;
+
+		}
 	}
-	
+
 	string InMemoryJsonObject::getRelativeName()
 	{
 		return this->relativeName;
 	}
-	
+
 	bool InMemoryJsonObject::isDeletable()
 	{
 		return false;
@@ -372,77 +419,95 @@ namespace JsonMaker{
 }
 
 namespace JsonMaker{
-	
+
 	//the json library
     void JSON::clear()
     {
         root->clear();
     }
-	
-	void JSON::internalInitialize(JsonType type, void* arguments)
-	{
-		this->jsonType = type;
-		this->JsonObjectArguments = arguments;
-		if (type == JsonType::Memory)
-			root = new InMemoryJsonObject(NULL, "");
-		//else
-			//root = new FileAystemJsonObject(null, "", arguments);
-	}
-	
-	JSON::JSON(JsonType type = JsonType::Memory, void * arguments) 
-	{ 
-		this->internalInitialize(type, arguments);
-	}
-    JSON::JSON(string JsonString, JsonType type , void* arguments)
-    {
-		this->internalInitialize(type, arguments);
-        this->parseJson(JsonString);
-    }
 
-        
-    IJSONObject *JSON::find(string objectName, bool autoCreateTree, IJSONObject *currentParent)
+	void JSON::internalInitialize(IJSONObject* _modelObject)
+	{
+		if ( _modelObject == NULL)
+			_modelObject = new InMemoryJsonObject();
+
+		this->modelObject = _modelObject;
+
+        //typeid
+		if (dynamic_cast<InMemoryJsonObject*>(modelObject))
+			root = new InMemoryJsonObject();
+
+		root->Initialize(NULL, "", this->modelObject);
+	}
+
+	JSON::JSON(bool caseSensitiveToFind, IJSONObject *_modelObject)
+	{
+		this->caseSensitiveToFind = caseSensitiveToFind;
+		this->internalInitialize(_modelObject);
+	}
+
+	JSON::JSON(string JsonString, bool caseSensitiveToFind, IJSONObject *_modelObject)
+	{
+		this->caseSensitiveToFind = caseSensitiveToFind;
+		this->internalInitialize(_modelObject);
+		this->parseJson(JsonString);
+	}
+
+    IJSONObject *JSON::find(string objectName, bool autoCreateTree, IJSONObject *currentParent, SOType forceType)
     {
-        //quebra o nome em um array
-        objectName = ReplaceString(objectName, "]", "");
+		//quebra o nome em um array
+		objectName = ReplaceString(objectName, "]", "");
         objectName = ReplaceString(objectName, "[", ".");
 
-        std::string currentName = objectName;
+		//remove '.' from start (like when lib is used with json.set("[0].foo")
+		while (objectName != "" && objectName[0] == '.')
+			objectName = objectName.substr(1);
+
+		std::string currentName = objectName;
         std::string childsNames = "";
         IJSONObject *childOnParent;
 
-        if (objectName.find(".") != string::npos)
+		if (objectName.find(".") != string::npos)
         {
             currentName = objectName.substr(0, objectName.find("."));
             childsNames = objectName.substr(objectName.find(".") + 1);
         }
-		
-		if (!currentParent->__containsChild(currentName))
+
+		if (!currentParent->__containsChild(currentName, this->caseSensitiveToFind))
         {
             if (autoCreateTree)
             {
 				IJSONObject *tempObj;
-				if (this->jsonType == JsonType::Memory)
-					tempObj = new InMemoryJsonObject((InMemoryJsonObject*)currentParent, currentParent->getRelativeName() + "." + currentName);
-				//else
-					//tempObj = new FileSystemJsonObject((FileSystemJsonObject*)currentParent, currentParent->getRelativeName() + "." +currentName, (string)this->JsonObjectArguments);
-				
+				string currentParentRelativeName = currentParent->getRelativeName();
+
+				if (dynamic_cast<InMemoryJsonObject*>(currentParent))
+					tempObj = new InMemoryJsonObject();
+
+				tempObj->Initialize((InMemoryJsonObject*)currentParent, currentParent->getRelativeName(), this->modelObject);
+
+				if (forceType != SOType::Undefined)
+					tempObj->forceType(forceType);
+
+
+
 				currentParent->setChild(currentName, tempObj);
             }
             else
                 return NULL;
         }
 
-        childOnParent = currentParent->__getChild(currentName);
+
+		childOnParent = currentParent->__getChild(currentName, this->caseSensitiveToFind);
 
 
-        if (childsNames == "")
-        {
-            return childOnParent;
-        }
-        else
-        {
-            return this->find(childsNames, autoCreateTree, childOnParent);
-        }
+		if (childsNames == "")
+		{
+			return childOnParent;
+		}
+		else
+		{
+			return this->find(childsNames, autoCreateTree, childOnParent);
+		}
     }
 
     void JSON::_set(string objectName, string value)
@@ -467,6 +532,15 @@ namespace JsonMaker{
 
     void JSON::del(IJSONObject *node)
     {
+		auto childs = node->__getChildsNames();
+		for (const auto& c: childs)
+		{
+			del(node->__getChild(c));
+		}
+		node->clear();
+		childs.clear();
+
+
         /*auto childsNames = node->__getChildsNames();
         for (const auto& c : childsNames)
         {
@@ -496,6 +570,124 @@ namespace JsonMaker{
             }
         }*/
     }
+
+	/// <summary>
+    /// Removes an object from JSON three
+    /// </summary>
+    /// <param name="objectName">The object name</param>
+    void JSON::del(string objectName)
+    {
+        IJSONObject *temp = this->find(objectName, false, this->root);
+        if (temp != NULL)
+            del(temp);
+    }
+
+	void JSON::clearChilds(string objectName)
+    {
+        IJSONObject *temp = this->find(objectName, false, this->root);
+        bool sucess;
+        if (temp != NULL)
+        {
+            //auto childs = temp->__getChilds();
+			auto names = temp->__getChildsNames();
+            for (const auto& c : names)
+            {
+                del(temp->__getChild(c));
+            }
+        }
+    }
+
+	/// <summary>
+    /// Insert a new json in current json three
+    /// </summary>
+    /// <param name="objectName">Name of the object</param>
+    /// <param name="toImport">Json to be imported</param>
+    void JSON::set(string objectName, JSON *toImport)
+    {
+
+		if (objectName != "")
+		{
+			if (!objectName.find("\"") == 0)
+				objectName = '"' + objectName + '"';
+			objectName = "{" + objectName + ":" + toImport->ToJson() + "}";
+			this->parseJson(objectName, "");
+		}
+		else
+		{
+			this->parseJson(toImport->ToJson());
+		}
+
+    }
+
+
+	/// <summary>
+    /// Set or creates an property with an json string
+    /// </summary>
+    /// <param name="objectName">The json object name</param>
+    /// <param name="value">The json string </param>
+
+	void JSON::set(string objectName, string value, SOType forceType)
+	{
+		if (isAJson(value))
+		{
+			this->parseJson(value, objectName);
+		}
+		else
+		{
+			auto found = this->find(objectName, true, this->root);
+			found->setSingleValue(value);
+		}
+
+	}
+
+	/// <summary>
+    /// Serialize the Json three
+    /// </summary>
+    /// <param name="quotesOnNames">User '"' in name of objects</param>
+    /// <returns></returns>
+    string JSON::ToJson(bool format)
+    {
+        std::string result = this->root->ToJson(true, format);
+        return result;
+    }
+
+    string JSON::ToString()
+    {
+        return this->ToJson();
+    }
+
+	/// <summary>
+    /// Return true if the an object is in json three
+    /// </summary>
+    /// <param name="objectName">The object name</param>
+    /// <returns></returns>
+    bool JSON::contains(string objectName)
+    {
+        bool result = this->find(objectName, false, this->root) != NULL;
+        return result;
+    }
+
+    /// <summary>
+    /// returns the value of an json object as a json string (Serialize an object)
+    /// </summary>
+    /// <param name="objectName">The object name</param>
+    /// <param name="quotesOnNames">User '"' in names</param>
+    /// <returns></returns>
+    string JSON::get(string objectName, bool format, bool quotesOnNames, string valueOnNotFound)
+    {
+        IJSONObject *temp = this->find(objectName, false, this->root);
+        if (temp != NULL)
+            return temp->ToJson(quotesOnNames, format);
+        else
+            return valueOnNotFound;
+
+    }
+
+	IJSONObject *JSON::getRaw(string objectName)
+	{
+		return this->find(objectName, false, this->root);
+	}
+
 
     vector<string> JSON::getObjectsNames(IJSONObject *currentItem)
     {
@@ -534,14 +726,37 @@ namespace JsonMaker{
 
     }
 
-    vector<string> JSON::getChildsNames(IJSONObject *currentItem)
+	/// <summary>
+    /// Return all names of the json three of an object
+    /// </summary>
+    /// <param name="objectName">The name of object</param>
+    /// <returns></returns>
+    vector<string> JSON::getObjectsNames(string objectName)
+    {
+        if (objectName == "")
+        {
+            IJSONObject *nullo = NULL;
+            return this->getObjectsNames(nullo);
+        }
+        else
+        {
+            IJSONObject* finded = this->find(objectName, false, this->root);
+            vector<string> retorno;
+            if (finded != NULL)
+                retorno = this->getObjectsNames(finded);
+
+            return retorno;
+        }
+    }
+
+	vector<string> JSON::getChildsNames(IJSONObject *currentItem)
     {
         vector<string> retorno;
         bool sucess;
 
         if (currentItem == NULL)
             currentItem = this->root;
-		
+
 		auto childsNames = currentItem->__getChildsNames();
 
         for (int cont = 0; cont < childsNames.size(); cont++)
@@ -550,6 +765,291 @@ namespace JsonMaker{
         }
         return retorno;
     }
+
+    /// <summary>
+    /// Return the childNames of an json object
+    /// </summary>
+    /// <param name="objectName">The name of object</param>
+    /// <returns></returns>
+    vector<string> JSON::getChildsNames(string objectName)
+    {
+        if (objectName == "")
+        {
+            IJSONObject *nullo = NULL;
+            return this->getChildsNames(nullo);
+        }
+        else
+        {
+            IJSONObject* finded = this->find(objectName, false, this->root);
+            vector<string> retorno;
+            if (finded != NULL)
+                retorno = this->getChildsNames(finded);
+            return retorno;
+        }
+
+    }
+
+
+    void JSON::fromJson(string json, bool tryParseInvalidJson)
+	{
+		this->parseJson(json, "", tryParseInvalidJson, SOType::Undefined);
+	}
+
+	void JSON::fromString(string json, bool tryParseInvalidJson)
+	{
+		this->parseJson(json, "", tryParseInvalidJson, SOType::Undefined);
+
+	}
+
+	enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord };
+	void JSON::parseJson(string json, string parentName, bool tryParseInvalidJson, SOType forceType)
+	{
+		auto currentObject = this->root;
+
+		if (parentName != "")
+			currentObject = this->find(parentName, true, root);
+
+		currentObject->name = parentName;
+
+		ParseStates state = ParseStates::findValueStart;
+
+		bool ignoreNextChar = false;
+		stringstream currentStringContent;
+		stringstream currentNumberContent;
+		stringstream currentSpecialWordContent;
+		stringstream currentChildName;
+
+		int currLine = 1;
+		int currCol = 1;
+
+		int max = json.size();
+		char curr = ' ';
+
+		for (int cont = 0; cont < max; cont++)
+		{
+			curr = json[cont];
+
+			currCol++;
+			if (curr == '\n')
+			{
+				currCol = 1;
+				currLine++;
+			}
+
+			switch (state)
+			{
+				case ParseStates::findingStart:
+					if (curr == '"')
+					{
+						if (currentObject->isArray())
+							state = ParseStates::prepareArray;
+						else
+							state = ParseStates::readingName;
+						currentChildName.clear();
+					}
+					else if ((curr == ',')/* || (curr == '[') || (curr == '{')*/)
+					{
+						if (currentObject->isArray())
+							state = ParseStates::prepareArray;
+					}
+
+					else if ((curr == '}') || (curr == ']'))
+					{
+						if (parentName.find('.') != string::npos)
+						{
+							parentName = parentName.substr(0, parentName.find_last_of('.'));
+							if (currentObject != NULL)
+								currentObject = currentObject->parent;
+						}
+						else
+						{
+							parentName = "";
+							currentObject = root;
+						}
+					}
+					break;
+				case ParseStates::readingName:
+					if (curr == '"')
+					{
+						state = ParseStates::waitingKeyValueSep;
+						currentObject = this->find(currentChildName.str(), true, currentObject, forceType);
+						currentObject->name = currentChildName.str();
+						parentName = parentName + (parentName != "" ? "." : "") + currentChildName.str();
+
+					}
+					else
+						currentChildName << curr;
+					break;
+				case ParseStates::waitingKeyValueSep:
+					if (curr == ':')
+						state = ParseStates::findValueStart;
+					break;
+				case ParseStates::findValueStart:
+					if (curr == '"')
+					{
+						state = ParseStates::readingContentString;
+						currentStringContent.clear();
+					}
+					else if (curr == '{')
+					{
+						state = ParseStates::findingStart;
+					}
+					else if (curr == '[')
+						state = ParseStates::prepareArray;
+					else if (string("0123456789-+.").find(curr) != string::npos)
+					{
+						state = ParseStates::readingContentNumber;
+						currentNumberContent.clear();
+						cont--;
+						currCol--;
+					}
+					else if (string("untfUNTF").find(curr) != string::npos)
+					{
+						state = ParseStates::readingContentSpecialWord;
+						currentSpecialWordContent.clear();
+						cont--;
+						currCol--;
+					}
+					else if (curr == ']')
+					{
+						//delete currenObject
+						auto temp = currentObject;
+
+
+						if (parentName.find('.') != string::npos)
+						{
+							parentName = parentName.substr(0, parentName.find_last_of('.'));
+							currentObject = currentObject->parent;
+						}
+						else
+						{
+							parentName = "";
+							currentObject = root;
+						}
+
+						currentObject->del(temp->name);
+
+						cont--;
+						currCol--;
+						state = ParseStates::findingStart;
+					}
+					else if (string(" \t\r\n").find(curr) == string::npos)
+					{
+                        string errorMessage = "SintaxError at line "+to_string(currLine) + " and column "+to_string(currCol) + ". Expected ' '(space), \t, \r or \n, but found "+curr+".";
+						if(!tryParseInvalidJson)
+							throw errorMessage;
+					}
+					break;
+
+				case ParseStates::prepareArray:
+					//state = "findingStart";
+					currentChildName.clear();
+					currentChildName << to_string(currentObject->__getChildsNames().size());
+					currentObject = this->find(currentChildName.str(), true, currentObject, forceType);
+					currentObject->name = currentChildName.str();
+					parentName = parentName + (parentName != "" ? "." : "") + currentChildName.str();
+					state = ParseStates::findValueStart;
+					cont--;
+					currCol--;
+					break;
+				case ParseStates::readingContentString:
+					if (ignoreNextChar)
+					{
+						currentStringContent << curr;
+						ignoreNextChar = false;
+					}
+					else if (curr == '\\')
+					{
+						ignoreNextChar = true;
+						currentStringContent << curr;
+					}
+					else if (curr == '"')
+					{
+						currentObject->setSingleValue(currentStringContent.str());
+
+						//return to parent Object
+						if (parentName.find('.') != string::npos)
+						{
+							parentName = parentName.substr(0, parentName.find_last_of('.'));
+							currentObject = currentObject->parent;
+						}
+						else
+						{
+							parentName = "";
+							currentObject = root;
+						}
+
+						state = ParseStates::findingStart;
+
+					}
+					else
+						currentStringContent << curr;
+					break;
+				case ParseStates::readingContentNumber:
+					if (string("0123456789.-+").find(curr) != string::npos)
+						currentNumberContent << curr;
+					else
+					{
+						currentObject->setSingleValue(currentNumberContent.str());
+
+						//return to parent Object
+						if (parentName.find('.') != string::npos)
+						{
+							parentName = parentName.substr(0, parentName.find_last_of('.'));
+							currentObject = currentObject->parent;
+						}
+						else
+						{
+							parentName = "";
+							currentObject = root;
+						}
+
+						cont--;
+						state = ParseStates::findingStart;
+					}
+
+					break;
+				case ParseStates::readingContentSpecialWord:
+					if (string("truefalseundefinednulTRUEFALSEUNDEFINEDNUL").find(curr) != string::npos)
+						currentSpecialWordContent<<curr;
+					else
+					{
+                        string strTemp = currentSpecialWordContent.str();
+                        std::transform(strTemp.begin(), strTemp.end(), strTemp.begin(), ::tolower);
+						if ((strTemp == "true") ||
+							(strTemp == "false") ||
+							(strTemp == "null") ||
+							(strTemp == "undefined"))
+						{
+							currentObject->setSingleValue(strTemp);
+
+							//return to parent Object
+							if (parentName.find('.') != string::npos)
+							{
+								parentName = parentName.substr(0, parentName.find_last_of('.'));
+								currentObject = currentObject->parent;
+							}
+							else
+							{
+								parentName = "";
+								currentObject = root;
+							}
+
+							cont--;
+							state = ParseStates::findingStart;
+						}
+						else
+						{
+                            string errorMessage = "Invalid simbol at line " + to_string(currLine) + " and column " + to_string(currCol) + ": " + currentSpecialWordContent.str();
+							if (!tryParseInvalidJson)
+								throw errorMessage;
+						}
+					}
+
+					break;
+			}
+		}
+	}
 
     vector<string> JSON::getJsonFields(string json)
     {
@@ -567,92 +1067,93 @@ namespace JsonMaker{
 				skeepNext = false;
 				continue;
 			}
-			
-            if (json[cont] == ',')
-            {
-                if ((open == 0) && (!quotes))
-                {
-                    fields.push_back(temp.str());
-                    //clear the stringstream
-					temp.str(std::string());
-                }
-                else
-                    //if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
-                    temp << json[cont];
-            }
-			
-            else
-            {
-                if (!quotes)
-                {
-                    if ((json[cont] == '{') || (json[cont] == '['))
-                        open++;
-                    else if ((json[cont] == '}') || (json[cont] == ']'))
-                        open--;
-                }
-				else if (json[cont] =='\\')
+
+			if (!quotes)
+			{
+				if (json[cont] == ',')
 				{
-					skeepNext = true;
+					if (open == 0)
+					{
+						fields.push_back(temp.str());
+						temp.clear();
+						continue;
+					}
 				}
+				else if ((json[cont] == '{') || (json[cont] == '['))
+					open++;
+				else if ((json[cont] == '}') || (json[cont] == ']'))
+					open--;
+			}
+			else
+			{
+				if (json[cont] == '\\')
+				{
+					temp << json[cont];
+					skeepNext = true;
+					continue;
+				}
+			}
 
-                if (json[cont] == '"')
-                {
-                    //if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
-					quotes = !quotes;
-                }
+			if (json[cont] == '"')
+			{
+				//if ((json[cont - 1] != '\\') || (json[cont - 2] == '\\'))
+				quotes = !quotes;
+			}
 
-                // if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
-                temp << json[cont];
-            }
-
+			// if ((quotes) || (temp.Length == 0) || (!"}]".Contains(temp[temp.Length - 1])))
+			temp << json[cont];
 
         }
-        
+
         //get size of temp
         temp.seekg(0, ios::end);
         int size = temp.tellg();
         if (size > 0)
             fields.push_back(temp.str());
-			
+
         return fields;
 
     }
 
     string JSON::clearJsonString(string json)
     {
-        stringstream result;
+		stringstream result;
 
-        bool quotes = false;
+		bool quotes = false;
+		char oldOldAtt = ' ';
+		char oldAtt = ' ';
 		bool skeepNext = false;
-        string specialchars1 = "\r\n\t\0 ";
-        for (const auto& att : json)
-        {
+		for (const auto& att : json)
+		{
 			if (skeepNext)
 			{
-				result << att;	
+				result << att;
 				skeepNext = false;
 				continue;
 			}
-			
-            if (att == '\"')
-                quotes = !quotes;
 
-            if (!quotes)
-            {
-                if (specialchars1.find(att) == string::npos)
-                    result << att;
-            }
-            else
-            {
+			if (att == '\"')
+				quotes = !quotes;
+
+			if (!quotes)
+			{
+				if (string("\r\n\t\0 ").find(att) == string::npos)
+					result << att;
+			}
+			else
+			{
 				if (att == '\\')
 				{
 					skeepNext = true;
 				}
-                result << att;
-            }
-        }
 
-        return result.str();
+				result << att;
+			}
+
+			oldOldAtt = oldAtt;
+			oldAtt = att;
+		}
+		return result.str();
     }
 
     bool JSON::isAJson(string json, bool objects, bool arrays)
@@ -686,238 +1187,11 @@ namespace JsonMaker{
         return false;
     }
 
-    /// <summary>
-    /// Removes an object from JSON three
-    /// </summary>
-    /// <param name="objectName">The object name</param>
-    void JSON::del(string objectName)
-    {
-        IJSONObject *temp = this->find(objectName, false, this->root);
-        if (temp != NULL)
-            del(temp);
-    }
-
-    void JSON::clearChilds(string objectName)
-    {
-        IJSONObject *temp = this->find(objectName, false, this->root);
-        bool sucess;
-        if (temp != NULL)
-        {
-            //auto childs = temp->__getChilds();
-			auto names = temp->__getChildsNames();
-            for (const auto& c : names)
-            {
-                del(temp->__getChild(c));
-            }
-        }
-    }
-
-    /// <summary>
-    /// Set or creates an property with an json string
-    /// </summary>
-    /// <param name="objectName">The json object name</param>
-    /// <param name="value">The json string </param>
-    void JSON::set(string objectName, string value)
-    {
-
-        if (objectName != "")
-            objectName = objectName + ":";
-        this->parseJson(objectName + value);
-
-    }
-
-    /// <summary>
-    /// Insert a new json in current json three
-    /// </summary>
-    /// <param name="objectName">Name of the object</param>
-    /// <param name="toImport">Json to be imported</param>
-    void JSON::set(string objectName, JSON *toImport)
-    {
-        if (objectName != "")
-            objectName = objectName + ":";
-        this->parseJson(objectName + toImport->ToJson());
-
-    }
-
-    /// <summary>
-    /// Serialize the Json three
-    /// </summary>
-    /// <param name="quotesOnNames">User '"' in name of objects</param>
-    /// <returns></returns>
-    string JSON::ToJson(bool format)
-    {
-        std::string result = this->root->ToJson(true, format);
-        return result;
-    }
-
-    string JSON::ToString()
-    {
-        return this->ToJson();
-    }
-
-    /// <summary>
-    /// Return true if the an object is in json three
-    /// </summary>
-    /// <param name="objectName">The object name</param>
-    /// <returns></returns>
-    bool JSON::contains(string objectName)
-    {
-        bool result = this->find(objectName, false, this->root) != NULL;
-        return result;
-    }
-
-    /// <summary>
-    /// returns the value of an json object as a json string (Serialize an object)
-    /// </summary>
-    /// <param name="objectName">The object name</param>
-    /// <param name="quotesOnNames">User '"' in names</param>
-    /// <returns></returns>
-    string JSON::get(string objectName, bool format, bool quotesOnNames)
-    {
-        IJSONObject *temp = this->find(objectName, false, this->root);
-        if (temp != NULL)
-            return temp->ToJson(quotesOnNames, format);
-        else
-            return "null";
-
-    }
-
-    
-
-    /// <summary>
-    /// Return all names of the json three of an object
-    /// </summary>
-    /// <param name="objectName">The name of object</param>
-    /// <returns></returns>
-    vector<string> JSON::getObjectsNames(string objectName)
-    {
-        if (objectName == "")
-        {
-            IJSONObject *nullo = NULL;
-            return this->getObjectsNames(nullo);
-        }
-        else
-        {
-            IJSONObject* finded = this->find(objectName, false, this->root);
-            vector<string> retorno;
-            if (finded != NULL)
-                retorno = this->getObjectsNames(finded);
-
-            return retorno;
-        }
-    }
-
-    /// <summary>
-    /// Return the childNames of an json object
-    /// </summary>
-    /// <param name="objectName">The name of object</param>
-    /// <returns></returns>
-    vector<string> JSON::getChildsNames(string objectName)
-    {
-        if (objectName == "")
-        {
-            IJSONObject *nullo = NULL;
-            return this->getChildsNames(nullo);
-        }
-        else
-        {
-            IJSONObject* finded = this->find(objectName, false, this->root);
-            vector<string> retorno;
-            if (finded != NULL)
-                retorno = this->getChildsNames(finded);
-            return retorno;
-        }
-
-    }
-
-
-    void JSON::fromJson(string json)
-    {
-        this->parseJson(json);
-    }
-
-    void JSON::fromString(string json)
-    {
-        this->parseJson(json);
-
-    }
-
-	
-    void JSON::parseJson(string json, string parentName)
-    {
-        //limpa o json, removendo coisas desnecessárias como espaços em branco e tabs
-        json = clearJsonString(json);
-        string name = "";
-
-        string value = json;
-
-        //verifica se o json é uma par chave<-> valor. Se for pega o nome
-        if (json.find(":") != string::npos)
-        {
-            name = "";
-            int index = 0;
-            string allowdNameChars = "\"_ABCDEFGHIJKLMNOPQRSTUVXYWZabcdefghijklmnop.qrstuvxywz0123456789[] ";
-            while (json[index] != ':')
-            {
-                if (allowdNameChars.find(json[index]) != string::npos)
-                    name += json[index];
-                else
-                {
-                    name = "";
-                    break;
-                }
-                index++;
-            }
-
-            //se achou o nome, então tira o nome do json, deixando as duas informações em duas variáveis serparadas
-            if (name != "")
-                value = json.substr(json.find(":") + 1);
-
-        }
-
-        //remove aspas do nome, caso houverem
-        name = ReplaceString(name, "\"", "");
-
-
-        //se tiver um '{' ou um '[', então processa independentemente cacda um de seus valroes
-        vector<string> childs;
-        if ((value != "") && (value[0] == '['))
-        {
-            childs = getJsonFields(value);
-            for (int cont = 0; cont < childs.size(); cont++)
-                childs[cont] = cont + ":" + childs[cont];
-        }
-        else if ((value != "") && (value[0] == '{'))
-            childs = getJsonFields(value);
-        else
-            childs.push_back(value);
 
 
 
-        //parapara o nome do objeto
-        if ((parentName != "") && (name != ""))
-            name = '.' + name;
 
-
-        name = parentName + name;
-
-        //se for um array, cria um novo array
-
-
-        auto tempName = name;
-        for (const auto& att : childs)
-        {
-            //se for uma string, remove as aspas do inicio e do final
-            //
-            auto toInsert = att;
-
-            //adiciona o objeto à lista
-            if (toInsert != json)
-                this->_set(tempName, toInsert);
-        }
-    }
-	
-	SOType JSON::getJSONType(string objectName)
+    SOType JSON::getJSONType(string objectName)
 	{
 		IJSONObject *temp = this->find(objectName, false, this->root);
 		if (temp != NULL)
@@ -925,10 +1199,10 @@ namespace JsonMaker{
 			return temp->getJSONType();
 		}
 		else
-			return SOType::Null;
+			return SOType::Undefined;
 	}
 
-    
+
     /// <summary>
     /// Get a json property as string
     /// </summary>
@@ -945,10 +1219,9 @@ namespace JsonMaker{
         if ((result.size() > 0) && (result[result.size() - 1] == '"'))
             result = result.substr(0, result.size() - 1);
 
-        if (result.size() > 0)
-            result = __unescapeString(result);
+		result = __unescapeString(result);
 
-        if ((result != "") && (result != "null"))
+        if ((result != "") && (result != "undefined"))
             return result;
         else
             return defaultValue;
@@ -960,9 +1233,11 @@ namespace JsonMaker{
     /// </summary>
     /// <param name="name">The property object name </param>
     /// <param name="value">The value</param>
-    void JSON::setString(string name, string value)
+    void JSON::setString(string name, string value, bool tryRedefineType)
     {
-
+		if (isAJson(value))
+			this->parseJson(value, name);
+		else{
 
 
         value = ReplaceString(value, "\\", "\\\\");
@@ -971,7 +1246,8 @@ namespace JsonMaker{
         value = ReplaceString(value, "\n", "\\n");
         value = ReplaceString(value, "\t", "\\t");
 
-        this->set(name, '"' + value + '"');
+        this->set(name, '"' + value + '"', tryRedefineType ? SOType::Undefined : SOType::String);
+		}
     }
 
     /// <summary>
@@ -995,7 +1271,7 @@ namespace JsonMaker{
     /// <param name="value">The value</param>
     void JSON::setInt(string name, int value)
     {
-        this->set(name, std::to_string(value));
+        this->set(name, std::to_string(value), SOType::Int);
     }
 
     /// <summary>
@@ -1019,7 +1295,7 @@ namespace JsonMaker{
     /// <param name="value">The value</param>
     void JSON::setLong(string name, long value)
     {
-        this->set(name, std::to_string(value));
+        this->set(name, std::to_string(value), SOType::Int);
     }
 
     /// <summary>
@@ -1034,7 +1310,7 @@ namespace JsonMaker{
         if (temp != "")
         {
 			std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
-            if (temp == "true")
+            if ((temp == "true") || (temp == "1"))
                 return true;
             else
                 return false;
@@ -1050,8 +1326,8 @@ namespace JsonMaker{
     void JSON::setBoolean(string name, bool value)
     {
 		std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-		
-        this->set(name, name);
+
+        this->set(name, name, SOType::Boolean);
     }
 
     /// <summary>
@@ -1099,5 +1375,5 @@ namespace JsonMaker{
     {
         this->clear();
     }
-	
+
 }
