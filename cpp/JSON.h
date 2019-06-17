@@ -10,62 +10,79 @@
 
 
 //include used int trim functions
-#include <functional> 
+#include <functional>
 #include <cctype>
 #include <locale>
 
 using namespace std;
 
 namespace JsonMaker{
-	enum SOType { Null, String, DateTime, Int, Double, Boolean, __Object, __Array };
+	enum SOType { Null, String, DateTime, Int, Double, Boolean, __Object, __Array, Undefined };
 	enum JsonType { Memory, File};
 	class IJSONObject
     {
-        public:
-            virtual void clear() = 0;
-            virtual void del(string name) = 0;
-            virtual void setChild(string name, IJSONObject *child) = 0;
-            virtual void setSingleValue(string value) = 0;
-            virtual string serializeSingleValue() = 0;
-			virtual string getRelativeName() = 0;
-            virtual IJSONObject* __getChild(string name) = 0;
-			virtual bool __containsChild(string name) = 0;
-			virtual vector<string> __getChildsNames() = 0;
-			virtual bool isDeletable() = 0;
-			virtual SOType getJSONType() = 0;
-            
-			virtual bool isArray();
-            virtual string ToJson(bool quotesOnNames, bool format = false, int level = 0);
 		protected:
+			//properties
+			SOType forcedType = SOType::Undefined;
+
+
+			//methods
 			SOType __determineSoType(string value);
+			/*v*/virtual string serializeSingleValue() = 0;
+
+        public:
+			//public properties
+			IJSONObject *parent;
+			string name;
+
+			//public methods
+            /*v*/virtual void clear() = 0;
+			virtual void Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject) =  0;
+            /*v*/virtual void del(string name) = 0;
+			/*v*/virtual SOType getJSONType() = 0;
+			/*v*/virtual string getRelativeName() = 0;
+			virtual bool isArray();
+            /*v*/virtual void setChild(string name, IJSONObject *child) = 0;
+            /*v*/virtual void setSingleValue(string value) = 0;
+
+			virtual void forceType(SOType forcedType);
+			virtual string ToJson(bool quotesOnNames, bool format = false, int level = 0);
+
+			virtual bool __containsChild(string name, bool caseSensitive = false) = 0;
+            virtual IJSONObject* __getChild(string name, bool caseSensitive = false) = 0;
+			virtual vector<string> __getChildsNames() = 0;
+			/*v*/virtual bool isDeletable() = 0;
+
+
     };
-	
+
     class InMemoryJsonObject: public IJSONObject
     {
         protected:
-            
+
             map<string, IJSONObject*> childs;
             SOType type = SOType::Null;
+			string singleValue;
 			string relativeName;
 
-        
         public:
-            string serializeSingleValue();
-            string singleValue;
-            IJSONObject *parent;
-            InMemoryJsonObject(InMemoryJsonObject *pParent, string relativeName);
+			void Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject);
             void setChild(string name, IJSONObject *child);
-            void del(string name);
-            IJSONObject* get(string name);
-            void clear();
+			void del(string name);
+			void clear();
+			string serializeSingleValue();
 			SOType getJSONType();
             void setSingleValue(string value);
-			string getRelativeName();
-			IJSONObject* __getChild(string name);
-			bool __containsChild(string name);
 			vector<string> __getChildsNames();
+			IJSONObject* __getChild(string name, bool caseSensitive = false);
+			bool __containsChild(string name, bool caseSensitive = false);
+			string getRelativeName();
 			bool isDeletable();
-            
+
+            //InMemoryJsonObject(InMemoryJsonObject *pParent, string relativeName);
+			//IJSONObject* get(string name);
+
+
     };
 
 
@@ -75,13 +92,14 @@ namespace JsonMaker{
         private:
 			JsonType jsonType = JsonType::Memory;
             IJSONObject *root;
+            IJSONObject *modelObject;
+            bool caseSensitiveToFind;
 			void* JsonObjectArguments;
-			
-			void internalInitialize(JsonType type, void* arguments);
-            
 
-            
-            IJSONObject *find(string objectName, bool autoCreateTree, IJSONObject *currentParent);
+			void internalInitialize(IJSONObject *_modelObject = NULL);
+
+
+            IJSONObject *find(string objectName, bool autoCreateTree, IJSONObject *currentParent, SOType forceType = SOType::Undefined);
 
             void _set(string objectName, string value);
 
@@ -98,8 +116,9 @@ namespace JsonMaker{
             bool isAJson(string json, bool objects = true, bool arrays = true);
 
         public:
-            JSON(JsonType type = JsonType::Memory, void * arguments = NULL);
-            JSON(string JsonString, JsonType type = JsonType::Memory, void* arguments = NULL);
+			JSON(bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
+			JSON(string JsonString, bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
+
 
             /// <summary>
             /// Removes an object from JSON three
@@ -114,7 +133,7 @@ namespace JsonMaker{
             /// </summary>
             /// <param name="objectName">The json object name</param>
             /// <param name="value">The json string </param>
-            void set(string objectName, string value);
+            void set(string objectName, string value, SOType forceType = SOType::Undefined);
 
             /// <summary>
             /// Insert a new json in current json three
@@ -145,7 +164,9 @@ namespace JsonMaker{
             /// <param name="objectName">The object name</param>
             /// <param name="quotesOnNames">User '"' in names</param>
             /// <returns></returns>
-            string get(string objectName, bool format = false, bool quotesOnNames = true);
+            string get(string objectName, bool format = false, bool quotesOnNames = true, string valueOnNotFound = "undefined");
+
+			IJSONObject* getRaw(string objectName);
 
             /// <summary>
             /// Return all names of the json three of an object
@@ -162,15 +183,14 @@ namespace JsonMaker{
             vector<string> getChildsNames(string objectName = "");
 
 
-            void fromJson(string json);
+            void fromJson(string json, bool tryParseInvalidJson = false);
+			void fromString(string json, bool tryParseInvalidJson = false);
 
-            void fromString(string json);
-
-            void parseJson(string json, string parentName = "");
+            void parseJson(string json, string parentName = "", bool tryParseInvalidJson = false, SOType forceType = SOType::Undefined);
 
 
 			SOType getJSONType(string objectName);
-			
+
             /// <summary>
             /// Get a json property as string
             /// </summary>
@@ -184,7 +204,7 @@ namespace JsonMaker{
             /// </summary>
             /// <param name="name">The property object name </param>
             /// <param name="value">The value</param>
-            void setString(string name, string value);
+            void setString(string name, string value, bool tryRedefineType = false);
 
             /// <summary>
             /// Get a json property as int
