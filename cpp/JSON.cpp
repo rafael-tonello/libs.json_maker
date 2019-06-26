@@ -846,7 +846,7 @@ namespace JsonMaker{
 							state = ParseStates::prepareArray;
 						else
 							state = ParseStates::readingName;
-						currentChildName.clear();
+						currentChildName.str("");
 					}
 					else if ((curr == ',')/* || (curr == '[') || (curr == '{')*/)
 					{
@@ -876,6 +876,7 @@ namespace JsonMaker{
 						currentObject = this->find(currentChildName.str(), true, currentObject, forceType);
 						currentObject->name = currentChildName.str();
 						parentName = parentName + (parentName != "" ? "." : "") + currentChildName.str();
+						currentChildName.str("");
 
 					}
 					else
@@ -889,7 +890,7 @@ namespace JsonMaker{
 					if (curr == '"')
 					{
 						state = ParseStates::readingContentString;
-						currentStringContent.clear();
+						currentStringContent.str("");
 					}
 					else if (curr == '{')
 					{
@@ -900,14 +901,14 @@ namespace JsonMaker{
 					else if (string("0123456789-+.").find(curr) != string::npos)
 					{
 						state = ParseStates::readingContentNumber;
-						currentNumberContent.clear();
+						currentNumberContent.str("");
 						cont--;
 						currCol--;
 					}
 					else if (string("untfUNTF").find(curr) != string::npos)
 					{
 						state = ParseStates::readingContentSpecialWord;
-						currentSpecialWordContent.clear();
+						currentSpecialWordContent.str("");
 						cont--;
 						currCol--;
 					}
@@ -944,7 +945,7 @@ namespace JsonMaker{
 
 				case ParseStates::prepareArray:
 					//state = "findingStart";
-					currentChildName.clear();
+					currentChildName.str("");
 					currentChildName << to_string(currentObject->__getChildsNames().size());
 					currentObject = this->find(currentChildName.str(), true, currentObject, forceType);
 					currentObject->name = currentChildName.str();
@@ -967,6 +968,7 @@ namespace JsonMaker{
 					else if (curr == '"')
 					{
 						currentObject->setSingleValue(currentStringContent.str());
+						currentStringContent.str("");
 
 						//return to parent Object
 						if (parentName.find('.') != string::npos)
@@ -992,6 +994,7 @@ namespace JsonMaker{
 					else
 					{
 						currentObject->setSingleValue(currentNumberContent.str());
+						currentNumberContent.str("");
 
 						//return to parent Object
 						if (parentName.find('.') != string::npos)
@@ -1023,6 +1026,7 @@ namespace JsonMaker{
 							(strTemp == "undefined"))
 						{
 							currentObject->setSingleValue(strTemp);
+							currentSpecialWordContent.str("");
 
 							//return to parent Object
 							if (parentName.find('.') != string::npos)
@@ -1076,7 +1080,7 @@ namespace JsonMaker{
 					if (open == 0)
 					{
 						fields.push_back(temp.str());
-						temp.clear();
+						temp.str("");
 						continue;
 					}
 				}
