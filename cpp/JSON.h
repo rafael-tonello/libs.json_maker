@@ -1,4 +1,5 @@
-#define JSON_H
+#ifndef JSONMAKER_H
+#define JSONMAKER_H
 
 #include <iostream>
 #include <string>
@@ -43,7 +44,7 @@ namespace JsonMaker{
 			/*v*/virtual string getRelativeName() = 0;
 			virtual bool isArray();
             /*v*/virtual void setChild(string name, IJSONObject *child) = 0;
-            /*v*/virtual void setSingleValue(string value) = 0;
+            /*v*/virtual void setSingleValue(string value, SOType forceType = SOType::Undefined) = 0;
 
 			virtual void forceType(SOType forcedType);
 			virtual string ToJson(bool quotesOnNames, bool format = false, int level = 0);
@@ -72,7 +73,7 @@ namespace JsonMaker{
 			void clear();
 			string serializeSingleValue();
 			SOType getJSONType();
-            void setSingleValue(string value);
+            void setSingleValue(string value, SOType forceType = SOType::Undefined);
 			vector<string> __getChildsNames();
 			IJSONObject* __getChild(string name, bool caseSensitive = false);
 			bool __containsChild(string name, bool caseSensitive = false);
@@ -94,7 +95,6 @@ namespace JsonMaker{
             IJSONObject *root;
             IJSONObject *modelObject;
             bool caseSensitiveToFind;
-			void* JsonObjectArguments;
 
 			void internalInitialize(IJSONObject *_modelObject = NULL);
 
@@ -303,3 +303,6 @@ namespace JsonMaker{
 
     string __unescapeString(string data);
 }
+
+
+#endif // JSONMAKER_H

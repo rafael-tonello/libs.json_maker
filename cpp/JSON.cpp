@@ -283,9 +283,10 @@ namespace JsonMaker{
     {
         for (const auto& curr : this->childs) {
             curr.second->clear();
-            //delete[] curr->second;
+            delete curr.second;
         }
-        this->singleValue.clear();
+        this->singleValue = "";
+        this->relativeName = "";
         this->childs.clear();
     }
 
@@ -332,9 +333,12 @@ namespace JsonMaker{
 		return this->type;
     }
 
-    void InMemoryJsonObject::setSingleValue(string value)
+    void InMemoryJsonObject::setSingleValue(string value, SOType forceType)
     {
-        this->type = this->__determineSoType(value);
+        if (forceType == SOType::Undefined)
+            this->type = this->__determineSoType(value);
+        else
+            this->type = forceType;
 
 		if (this->type != SOType::Null)
 			this->singleValue = value;
@@ -425,6 +429,10 @@ namespace JsonMaker{
     void JSON::clear()
     {
         root->clear();
+        delete root;
+        modelObject->clear();
+        delete modelObject;
+
     }
 
 	void JSON::internalInitialize(IJSONObject* _modelObject)
@@ -492,6 +500,7 @@ namespace JsonMaker{
 
 
 				currentParent->setChild(currentName, tempObj);
+				tempObj = NULL;
             }
             else
                 return NULL;
@@ -629,13 +638,13 @@ namespace JsonMaker{
 
 	void JSON::set(string objectName, string value, SOType forceType)
 	{
-		if (isAJson(value))
+		if (forceType == SOType::Undefined && isAJson(value))
 		{
 			this->parseJson(value, objectName);
 		}
 		else
 		{
-			auto found = this->find(objectName, true, this->root);
+			auto found = this->find(objectName, true, this->root, forceType);
 			found->setSingleValue(value);
 		}
 
@@ -967,7 +976,7 @@ namespace JsonMaker{
 					}
 					else if (curr == '"')
 					{
-						currentObject->setSingleValue(currentStringContent.str());
+						currentObject->setSingleValue(currentStringContent.str(), SOType::String);
 						currentStringContent.str("");
 
 						//return to parent Object
@@ -1240,18 +1249,19 @@ namespace JsonMaker{
     /// <param name="value">The value</param>
     void JSON::setString(string name, string value, bool tryRedefineType)
     {
-		if (isAJson(value))
+		if (tryRedefineType && isAJson(value))
+		{
 			this->parseJson(value, name);
+        }
 		else{
 
+            value = ReplaceString(value, "\\", "\\\\");
+            value = ReplaceString(value, "\"", "\\\"");
+            value = ReplaceString(value, "\r", "\\r");
+            value = ReplaceString(value, "\n", "\\n");
+            value = ReplaceString(value, "\t", "\\t");
 
-        value = ReplaceString(value, "\\", "\\\\");
-        value = ReplaceString(value, "\"", "\\\"");
-        value = ReplaceString(value, "\r", "\\r");
-        value = ReplaceString(value, "\n", "\\n");
-        value = ReplaceString(value, "\t", "\\t");
-
-        this->set(name, '"' + value + '"', tryRedefineType ? SOType::Undefined : SOType::String);
+            this->set(name, '"' + value + '"', tryRedefineType ? SOType::Undefined : SOType::String);
 		}
     }
 
