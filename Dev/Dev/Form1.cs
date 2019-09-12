@@ -71,9 +71,9 @@ namespace Dev
 
         private void button3_Click(object sender, EventArgs e)
         {
-            JsonMaker.JSON jm = new JsonMaker.JSON(JsonMaker.JSON.JsonType.File, Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\test");
-            jm.fromJson(textBox1.Text);
-            textBox1.Text = jm.ToJson();
+            //JsonMaker.JSON jm = new JsonMaker.JSON(JsonMaker.JSON.JsonType.File, Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\test");
+            //jm.fromJson(textBox1.Text);
+            //textBox1.Text = jm.ToJson();
         }
 
 

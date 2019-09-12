@@ -1340,9 +1340,9 @@ namespace JsonMaker{
     /// <param name="value">The value</param>
     void JSON::setBoolean(string name, bool value)
     {
-		std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+		//std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 
-        this->set(name, name, SOType::Boolean);
+        this->set(name, value ? "true" : "false", SOType::Boolean);
     }
 
     /// <summary>
