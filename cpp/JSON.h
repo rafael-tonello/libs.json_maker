@@ -118,6 +118,7 @@ namespace JsonMaker{
         public:
 			JSON(bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
 			JSON(string JsonString, bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
+			~JSON();
 
 
             /// <summary>

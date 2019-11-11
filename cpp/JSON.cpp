@@ -462,6 +462,11 @@ namespace JsonMaker{
 		this->parseJson(JsonString);
 	}
 
+	JSON::~JSON()
+	{
+        this->clear();
+	}
+
     IJSONObject *JSON::find(string objectName, bool autoCreateTree, IJSONObject *currentParent, SOType forceType)
     {
 		//quebra o nome em um array
