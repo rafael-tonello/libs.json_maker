@@ -428,10 +428,19 @@ namespace JsonMaker{
 	//the json library
     void JSON::clear()
     {
-        root->clear();
-        delete root;
-        modelObject->clear();
-        delete modelObject;
+        if (root != NULL)
+        {
+            root->clear();
+            delete root;
+            root = NULL;
+        }
+
+        if (modelObject != NULL)
+        {
+            modelObject->clear();
+            delete modelObject;
+            modelObject = NULL;
+        }
 
     }
 
