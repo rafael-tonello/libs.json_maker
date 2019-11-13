@@ -44,40 +44,42 @@ namespace JsonMaker{
         }
 
         *sucess = false;
+
+        return {};
     }
 
     // trim from start (in place)
-    static inline void ltrim(std::string &s) {
+    inline void ltrim(std::string &s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(),
                 std::not1(std::ptr_fun<int, int>(std::isspace))));
     }
 
     // trim from end (in place)
-    static inline void rtrim(std::string &s) {
+    inline void rtrim(std::string &s) {
         s.erase(std::find_if(s.rbegin(), s.rend(),
                 std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
     }
 
     // trim from both ends (in place)
-    static inline void trim(std::string &s) {
+    inline void trim(std::string &s) {
         ltrim(s);
         rtrim(s);
     }
 
     // trim from start (copying)
-    static inline std::string ltrim_copy(std::string s) {
+    inline std::string ltrim_copy(std::string s) {
         ltrim(s);
         return s;
     }
 
     // trim from end (copying)
-    static inline std::string rtrim_copy(std::string s) {
+    inline std::string rtrim_copy(std::string s) {
         rtrim(s);
         return s;
     }
 
     // trim from both ends (copying)
-    static inline std::string trim_copy(std::string s) {
+    inline std::string trim_copy(std::string s) {
         trim(s);
         return s;
     }
@@ -86,7 +88,7 @@ namespace JsonMaker{
     {
         //result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
         string nValue = "";
-        int cont;
+        unsigned int cont;
         for (cont = 0; cont < data.size() - 1; cont++)
         {
             if (data[cont] == '\\')
@@ -127,15 +129,15 @@ namespace JsonMaker{
 
     bool IJSONObject::isArray()
     {
-        int temp = 0;
-        bool sucess;
+
+
 
 
 		vector<string> childsNames = this->__getChildsNames();
 		if (childsNames.size() == 0)
 			return false;
 
-        int cont = 0;
+        unsigned int cont = 0;
         while (cont < childsNames.size())
         {
             if (getOnly(childsNames[cont], "0123456789") != childsNames[cont])
@@ -171,7 +173,7 @@ namespace JsonMaker{
 
             level++;
 
-            for (int cont = 0; cont < childsNames.size(); cont++)
+            for (unsigned int cont = 0; cont < childsNames.size(); cont++)
             {
                 if (format)
                     for (int a = 0; a < level; a++)
@@ -348,7 +350,7 @@ namespace JsonMaker{
 	{
 		vector<string> result;
 		bool sucess;
-		for (int cont = 0; cont < this->childs.size(); cont++)
+		for (unsigned int cont = 0; cont < this->childs.size(); cont++)
 		{
 			auto current = getChildByIndex(&(this->childs), cont, &sucess);
 			if (sucess)
@@ -368,7 +370,7 @@ namespace JsonMaker{
 		}
 		else{
 			std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-			for (int cont = 0; cont < this->childs.size(); cont++)
+			for (unsigned int cont = 0; cont < this->childs.size(); cont++)
 			{
 				auto current = getChildByIndex(&(this->childs), cont, &sucess);
 				if (!sucess)
@@ -395,7 +397,7 @@ namespace JsonMaker{
 		}
 		else{
 			std::transform(name.begin(), name.end(), name.begin(), ::tolower);
-			for (int cont = 0; cont < this->childs.size(); cont++)
+			for (unsigned int cont = 0; cont < this->childs.size(); cont++)
 			{
 				auto current = getChildByIndex(&(this->childs), cont, &sucess);
 				if (!sucess)
@@ -500,7 +502,7 @@ namespace JsonMaker{
         {
             if (autoCreateTree)
             {
-				IJSONObject *tempObj;
+				IJSONObject *tempObj = NULL;
 				string currentParentRelativeName = currentParent->getRelativeName();
 
 				if (dynamic_cast<InMemoryJsonObject*>(currentParent))
@@ -609,7 +611,7 @@ namespace JsonMaker{
 	void JSON::clearChilds(string objectName)
     {
         IJSONObject *temp = this->find(objectName, false, this->root);
-        bool sucess;
+
         if (temp != NULL)
         {
             //auto childs = temp->__getChilds();
@@ -724,10 +726,10 @@ namespace JsonMaker{
         string parentName = "";
 
         vector<string> childsNames;
-        bool sucess;
+
 
 		auto childsNamesList = currentItem->__getChildsNames();
-        for (int cont = 0; cont < childsNamesList.size(); cont++)
+        for (unsigned int cont = 0; cont < childsNamesList.size(); cont++)
         {
 
             childsNames = getObjectsNames(currentItem->__getChild(childsNamesList[cont]));
@@ -776,14 +778,14 @@ namespace JsonMaker{
 	vector<string> JSON::getChildsNames(IJSONObject *currentItem)
     {
         vector<string> retorno;
-        bool sucess;
+
 
         if (currentItem == NULL)
             currentItem = this->root;
 
 		auto childsNames = currentItem->__getChildsNames();
 
-        for (int cont = 0; cont < childsNames.size(); cont++)
+        for (unsigned int cont = 0; cont < childsNames.size(); cont++)
         {
             retorno.push_back(childsNames[cont]);
         }
@@ -1087,7 +1089,7 @@ namespace JsonMaker{
         bool quotes = false;
 		bool skeepNext = false;
 
-        for (int cont = 1; cont < json.size() - 1; cont++)
+        for (unsigned int cont = 1; cont < json.size() - 1; cont++)
         {
 			if (skeepNext)
 			{
@@ -1148,8 +1150,8 @@ namespace JsonMaker{
 		stringstream result;
 
 		bool quotes = false;
-		char oldOldAtt = ' ';
-		char oldAtt = ' ';
+		//char oldOldAtt = ' ';
+		//char oldAtt = ' ';
 		bool skeepNext = false;
 		for (const auto& att : json)
 		{
@@ -1178,8 +1180,8 @@ namespace JsonMaker{
 				result << att;
 			}
 
-			oldOldAtt = oldAtt;
-			oldAtt = att;
+			//oldOldAtt = oldAtt;
+			//oldAtt = att;
 		}
 		return result.str();
     }

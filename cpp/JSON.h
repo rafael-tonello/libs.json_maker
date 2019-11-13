@@ -32,6 +32,7 @@ namespace JsonMaker{
 			/*v*/virtual string serializeSingleValue() = 0;
 
         public:
+            virtual ~IJSONObject(){};
 			//public properties
 			IJSONObject *parent;
 			string name;
@@ -285,22 +286,22 @@ namespace JsonMaker{
     map<string, IJSONObject*>::const_iterator getChildByIndex (map<string, IJSONObject*> *maptosearch, int index, bool *sucess);
 
     // trim from start (in place)
-    static inline void ltrim(std::string &s);
+    //static inline void ltrim(std::string &s);
 
     // trim from end (in place)
-    static inline void rtrim(std::string &s);
+    inline void rtrim(std::string &s);
 
     // trim from both ends (in place)
-    static inline void trim(std::string &s);
+    inline void trim(std::string &s);
 
     // trim from start (copying)
-    static inline std::string ltrim_copy(std::string s);
+    inline std::string ltrim_copy(std::string s);
 
     // trim from end (copying)
-    static inline std::string rtrim_copy(std::string s);
+    inline std::string rtrim_copy(std::string s);
 
     // trim from both ends (copying)
-    static inline std::string trim_copy(std::string s);
+    inline std::string trim_copy(std::string s);
 
     string __unescapeString(string data);
 }
