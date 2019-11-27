@@ -830,6 +830,8 @@ namespace JsonMaker{
 	enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord };
 	void JSON::parseJson(string json, string parentName, bool tryParseInvalidJson, SOType forceType)
 	{
+        if (json == "null")
+            return;
 		auto currentObject = this->root;
 
 		if (parentName != "")
