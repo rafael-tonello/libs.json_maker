@@ -832,6 +832,7 @@ namespace JsonMaker{
 	{
         if (json == "null")
             return;
+
 		auto currentObject = this->root;
 
 		if (parentName != "")
