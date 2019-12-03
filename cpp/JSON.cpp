@@ -831,7 +831,9 @@ namespace JsonMaker{
 	void JSON::parseJson(string json, string parentName, bool tryParseInvalidJson, SOType forceType)
 	{
         if (json == "null")
+        {
             return;
+        }
 
 		auto currentObject = this->root;
 
