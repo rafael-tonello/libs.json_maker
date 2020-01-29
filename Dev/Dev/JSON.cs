@@ -431,13 +431,14 @@ namespace JsonMaker
                 this.setBoolean(objectName, (bool)value);
             else if ((value is int) || (value is Int64) || (value is Int16) || (value is UInt16) || (value is UInt64) || (value is uint) || (value is byte) || (value is long) || (value is ulong))
                 this.set(objectName, value.ToString(), SOType.Int);
-            else if ((value is double) || (value is float))
+            else if (value is float)
+                this.setDouble(objectName, (float)value);
+            else if (value is double)
                 this.setDouble(objectName, (double)value);
             else if (value is DateTime)
                 this.setDateTime_ISOFormat(objectName, (DateTime)value);
             else if (value is JSON)
                 this.set(objectName, (JSON)value);
-
         }
 
         private enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord }
