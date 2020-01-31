@@ -274,6 +274,11 @@ namespace JsonMaker
         {
             return this.find(objectName, false, this.root);
         }
+	
+	public JSON getJSON(string objectName)
+        {
+            return new JSON(this.find(objectName, false, this.root).ToString());
+        }
 
         private List<string> getObjectsNames(IJSONObject currentItem = null)
         {
