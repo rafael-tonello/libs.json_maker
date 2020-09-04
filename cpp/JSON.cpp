@@ -430,11 +430,11 @@ namespace JsonMaker{
 	//the json library
     void JSON::clear()
     {
-        if (root != NULL)
+        if (this->root != NULL)
         {
-            root->clear();
-            delete root;
-            root = NULL;
+            this->root->clear();
+            delete this->root;
+            this->root = NULL;
         }
 
         if (modelObject != NULL)
@@ -459,6 +459,7 @@ namespace JsonMaker{
 
 		root->Initialize(NULL, "", this->modelObject);
 	}
+
 
 	JSON::JSON(bool caseSensitiveToFind, IJSONObject *_modelObject)
 	{

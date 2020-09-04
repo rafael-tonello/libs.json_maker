@@ -117,13 +117,25 @@ namespace JsonMaker{
             bool isAJson(string json, bool objects = true, bool arrays = true);
 
         public:
+            
 			JSON(bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
 			JSON(string JsonString, bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
 			~JSON();
 
+            JSON(const JSON &cp2)
+            {
+                if (dynamic_cast<InMemoryJsonObject*>(cp2.modelObject))
+			        this->internalInitialize(new InMemoryJsonObject());
+                else
+                    this->internalInitialize();
+                
+                
+                this->parseJson(((JSON&)cp2).ToJson());
+            }
+
 
             /// <summary>
-            /// Removes an object from JSON three
+            /// Removes an object +from JSON three
             /// </summary>
             /// <param name="objectName">The object name</param>
             void del(string objectName);
