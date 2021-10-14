@@ -129,10 +129,6 @@ namespace JsonMaker{
 
     bool IJSONObject::isArray()
     {
-
-
-
-
 		vector<string> childsNames = this->__getChildsNames();
 		if (childsNames.size() == 0)
 			return false;
@@ -147,18 +143,11 @@ namespace JsonMaker{
         return childsNames.size() > 0;
     }
 
-	void IJSONObject::forceType(SOType forcedType)
-	{
-		this->forcedType = forcedType;
-	}
-
 	string IJSONObject::ToJson(bool quotesOnNames, bool format, int level)
     {
         stringstream result;
 
-
 		vector<string> childsNames = this->__getChildsNames();
-
         if (childsNames.size() > 0)
         {
             bool array = this->isArray();
@@ -173,19 +162,35 @@ namespace JsonMaker{
 
             level++;
 
+            
+
             for (unsigned int cont = 0; cont < childsNames.size(); cont++)
             {
+                auto current = this->__getChild(childsNames[cont]);
+
+                //add comments to the object
+                if (format)
+                {
+
+                    auto comments = current->getComments();
+                    for (auto currComment: comments)
+                    {
+                        for (int a = 0; a < level; a++)
+                            result << "    ";    
+                        result << currComment;
+                    }
+                }
+
                 if (format)
                     for (int a = 0; a < level; a++)
                         result << "    ";
 
-                auto current = this->__getChild(childsNames[cont]);
                 if (array)
 				{
 					if ((current != NULL))
 						result << current->ToJson(quotesOnNames, format, level);
 				}
-				else
+                else
 				{
 					if (quotesOnNames)
 						result << '"' + childsNames[cont] + "\":" + current->ToJson(quotesOnNames, format, level);
@@ -196,6 +201,7 @@ namespace JsonMaker{
                 if (cont < childsNames.size() - 1)
                 {
                     result << ",";
+                        
                     if (format)
                         result << "\r\n";
                 }
@@ -219,8 +225,111 @@ namespace JsonMaker{
         }
         else
         {
-            return serializeSingleValue();
+            result << serializeSingleValue();
+            return result.str();
         }
+    }
+
+    string IJSONObject::serializeSingleValue()
+    {
+        auto type = this->getJSONType();
+        auto singleValue = this->getSingleValue();
+		if (type == SOType::Null)
+			return "null";
+		else if (type == SOType::Boolean)
+		{
+			string temp = singleValue;
+			std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+
+			temp =  ((temp == "true") || (temp == "1")) ? "true" : "false";
+			return temp;
+		}
+		else if (type == SOType::String)
+		{
+			if (singleValue.size() > 0)
+				if (singleValue[0] != '"')
+					return '"' + singleValue + '"';
+				else
+					return singleValue;
+			else
+				return "\"\"";
+		}
+		else if (type == SOType::Double)
+		{
+			std::replace( singleValue.begin(), singleValue.end(), ',', '.'); // replace all 'x' to 'y'
+			return singleValue;
+		}
+		else
+			return singleValue;
+    }
+
+    void IJSONObject::forceType(SOType forcedType)
+    {
+        switch (forcedType)
+        {
+            case Null:
+                this->__storeInternalProp("type", "Null");
+            break;
+            case String:
+                this->__storeInternalProp("type", "String");
+            break;
+            case DateTime:
+                this->__storeInternalProp("type", "DateTime");
+            break;
+            case Int:
+                this->__storeInternalProp("type", "Int");
+            break;
+            case Double:
+                this->__storeInternalProp("type", "Double");
+            break;
+            case Boolean:
+                this->__storeInternalProp("type", "Boolean");
+            break;
+            case __Object:
+                this->__storeInternalProp("type", "__Object");
+            break;
+            case __Array:
+                this->__storeInternalProp("type", "__Array");
+            break;
+            case Undefined:
+                this->__storeInternalProp("type", "Undefined");
+            break;
+        }
+
+    };
+    SOType IJSONObject::getJSONType()
+    {
+        auto childNames = this->__getChildsNames();
+        if (childNames.size() > 0)
+        {
+            if (this->isArray())
+                return SOType::__Array;
+            else
+                return SOType::__Object;
+        }
+
+        string typeName = this->__getInternalProp("type", "Undefined");
+        if (typeName == "Null")
+            return SOType::Null;
+        else if (typeName == "String")
+            return SOType::String;
+        else if (typeName == "DateTime")
+            return SOType::DateTime;
+        else if (typeName == "Int")
+            return SOType::Int;
+        else if (typeName == "Int")
+            return SOType::Int;
+        else if (typeName == "Double")
+            return SOType::Double;
+        else if (typeName == "Boolean")
+            return SOType::Boolean;
+        else if (typeName == "__Object")
+            return SOType::__Object;
+        else if (typeName == "__Array")
+            return SOType::__Array;
+        else if (typeName == "Undefined")
+            //return SOType::Undefined;
+            return this->__determineSoType(this->getSingleValue());
     }
 
 
@@ -292,58 +401,18 @@ namespace JsonMaker{
         this->childs.clear();
     }
 
-    string InMemoryJsonObject::serializeSingleValue()
-    {
-		if (this->type == SOType::Null)
-			return "null";
-		else if (this->type == SOType::Boolean)
-		{
-			string temp = this->singleValue;
-			std::transform(temp.begin(), temp.end(), temp.begin(), ::tolower);
+    
 
-			temp =  ((temp == "true") || (temp == "1")) ? "true" : "false";
-			return temp;
-		}
-		else if (this->type == SOType::String)
-		{
-			if (this->singleValue.size() > 0)
-				if (this->singleValue[0] != '"')
-					return '"' + this->singleValue + '"';
-				else
-					return this->singleValue;
-			else
-				return "\"\"";
-		}
-		else if (this->type == SOType::Double)
-		{
-			std::replace( this->singleValue.begin(), this->singleValue.end(), ',', '.'); // replace all 'x' to 'y'
-			return this->singleValue;
-		}
-		else
-			return this->singleValue;
+	
+
+    void InMemoryJsonObject::setSingleValue(string value)
+    {
+        this->singleValue = value;
     }
 
-	SOType InMemoryJsonObject::getJSONType()
+    string InMemoryJsonObject::getSingleValue()
     {
-        if (this->childs.size() > 0)
-		{
-			if (this->isArray())
-				return SOType::__Array;
-			else
-				return SOType::__Object;
-		}
-		return this->type;
-    }
-
-    void InMemoryJsonObject::setSingleValue(string value, SOType forceType)
-    {
-        if (forceType == SOType::Undefined)
-            this->type = this->__determineSoType(value);
-        else
-            this->type = forceType;
-
-		if (this->type != SOType::Null)
-			this->singleValue = value;
+        return this->singleValue;
     }
 
 	vector<string> InMemoryJsonObject::__getChildsNames()
@@ -354,7 +423,7 @@ namespace JsonMaker{
 		{
 			auto current = getChildByIndex(&(this->childs), cont, &sucess);
 			if (sucess)
-				result.push_back(current->first);
+                result.push_back(current->first);
 		}
 
 		return result;
@@ -423,6 +492,34 @@ namespace JsonMaker{
 	{
 		return false;
 	}
+
+    void InMemoryJsonObject::__storeInternalProp(string name,string value)
+    {
+        this->tags[name] = value;    
+    }
+
+    string InMemoryJsonObject::__getInternalProp(string name, string defaultValue)
+    {
+        if (this->tags.count(name) > 0)
+            return this->tags[name];
+        else
+            return defaultValue;
+    }
+
+    IJSONObject* InMemoryJsonObject::createNewInstance()
+    {
+        return new InMemoryJsonObject();
+    }
+
+    void InMemoryJsonObject::addComment(string comment)
+    {
+        this->comments.push_back(comment);
+    }
+
+    vector<string> InMemoryJsonObject::getComments()
+    {
+        return this->comments;
+    }
 }
 
 namespace JsonMaker{
@@ -453,9 +550,7 @@ namespace JsonMaker{
 
 		this->modelObject = _modelObject;
 
-        //typeid
-		if (dynamic_cast<InMemoryJsonObject*>(modelObject))
-			root = new InMemoryJsonObject();
+        root = this->modelObject->createNewInstance();
 
 		root->Initialize(NULL, "", this->modelObject);
 	}
@@ -506,10 +601,11 @@ namespace JsonMaker{
 				IJSONObject *tempObj = NULL;
 				string currentParentRelativeName = currentParent->getRelativeName();
 
-				if (dynamic_cast<InMemoryJsonObject*>(currentParent))
-					tempObj = new InMemoryJsonObject();
+				//if (dynamic_cast<InMemoryJsonObject*>(currentParent))
+				//	tempObj = new InMemoryJsonObject();
+                tempObj = currentParent->createNewInstance();
 
-				tempObj->Initialize((InMemoryJsonObject*)currentParent, currentParent->getRelativeName(), this->modelObject);
+				tempObj->Initialize(currentParent, currentParent->getRelativeName(), this->modelObject);
 
 				if (forceType != SOType::Undefined)
 					tempObj->forceType(forceType);
@@ -674,7 +770,16 @@ namespace JsonMaker{
     /// <returns></returns>
     string JSON::ToJson(bool format)
     {
-        std::string result = this->root->ToJson(true, format);
+        std::string result = "";
+        if (format)
+        {
+            auto comments = root->getComments();
+            for (auto currComment: comments)
+                result += currComment;
+        }
+            
+         result += this->root->ToJson(true, format);
+
         return result;
     }
 
@@ -828,7 +933,7 @@ namespace JsonMaker{
 
 	}
 
-	enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord };
+	enum ParseStates { findingStart, readingName, waitingKeyValueSep, findValueStart, prepareArray, readingContentString, readingContentNumber, readingContentSpecialWord, readingComment };
 	void JSON::parseJson(string json, string parentName, bool tryParseInvalidJson, SOType forceType)
 	{
         if (json == "null")
@@ -850,6 +955,7 @@ namespace JsonMaker{
 		stringstream currentNumberContent;
 		stringstream currentSpecialWordContent;
 		stringstream currentChildName;
+        stringstream currentComment;
 
 		int currLine = 1;
 		int currCol = 1;
@@ -857,8 +963,14 @@ namespace JsonMaker{
 		int max = json.size();
 		char curr = ' ';
 
+        string commentType = "";
+        string commentName = "";
+        vector<string> currentCommentList;
+        char oldCurr = '\0';
+
 		for (int cont = 0; cont < max; cont++)
 		{
+            oldCurr = curr;
 			curr = json[cont];
 
 			currCol++;
@@ -899,6 +1011,12 @@ namespace JsonMaker{
 							currentObject = root;
 						}
 					}
+                    else if (curr == '/')
+                    {
+                        currentComment.str("");
+                        commentType = "";
+                        state = ParseStates::readingComment;
+                    }
 					break;
 				case ParseStates::readingName:
 					if (curr == '"')
@@ -998,8 +1116,14 @@ namespace JsonMaker{
 					}
 					else if (curr == '"')
 					{
-						currentObject->setSingleValue(currentStringContent.str(), SOType::String);
+						currentObject->setSingleValue(currentStringContent.str());
+                        currentObject->forceType(SOType::String);
+
+                        for (auto c: currentCommentList)
+                            currentObject->addComment(c);
+                        currentCommentList.clear();
 						currentStringContent.str("");
+
 
 						//return to parent Object
 						if (parentName.find('.') != string::npos)
@@ -1025,6 +1149,9 @@ namespace JsonMaker{
 					else
 					{
 						currentObject->setSingleValue(currentNumberContent.str());
+                        for (auto c: currentCommentList)
+                            currentObject->addComment(c);
+                        currentCommentList.clear();
 						currentNumberContent.str("");
 
 						//return to parent Object
@@ -1057,6 +1184,9 @@ namespace JsonMaker{
 							(strTemp == "undefined"))
 						{
 							currentObject->setSingleValue(strTemp);
+                            for (auto c: currentCommentList)
+                                currentObject->addComment(c);
+                            currentCommentList.clear();
 							currentSpecialWordContent.str("");
 
 							//return to parent Object
@@ -1083,8 +1213,50 @@ namespace JsonMaker{
 					}
 
 					break;
+                    case ParseStates::readingComment:
+                        //identify comment type
+                        if (commentType == "")
+                        {
+                            if (curr == '/')
+                            {
+                                commentType = "line";
+                                currentComment << "//";
+                            }
+                            else
+                            {
+                                commentType = "block";
+                                currentComment << "/*";
+                            }
+                        }
+                        else
+                        {
+                            if ((commentType == "line" && curr == '\n') || (commentType == "block" && oldCurr == '*' && curr == '/'))
+                            {
+                                //add the current comment to the current parent (comment is a special SOType)
+                                state = ParseStates::findingStart;
+
+                                if (commentType == "block")
+                                    currentComment << "/";
+
+                                currentComment << endl;
+
+                                currentCommentList.push_back(currentComment.str());
+                                currentComment.str("");
+                            }
+                            else
+                            {
+                                currentComment << curr;
+                            }
+
+                        }
+                        
+
+                    break;
 			}
 		}
+
+        for (auto currComment: currentCommentList)
+            this->root->addComment(currComment);
 	}
 
     vector<string> JSON::getJsonFields(string json)
@@ -1411,6 +1583,14 @@ namespace JsonMaker{
     void JSON::Dispose()
     {
         this->clear();
+    }
+
+
+    string JSON::getNextCommentChildName()
+    {
+        string ret = "___comment___";
+        ret += std::to_string(this->commentNextNameCount++);
+        return ret;
     }
 
 }

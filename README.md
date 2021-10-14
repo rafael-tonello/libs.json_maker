@@ -26,5 +26,14 @@ We recommend that you use the folder when you need persistent data such as a cac
 `cout << jm.ToString());`<br/>
 
 
+# Tasks lists
+
+[ ] Allow user to especify custom IJSONObject as model
+    [ ] Create method "createNewInstance"
+    [ ] Adjust JSON code
+    [ ] move method serializeSingleValue to JSON class
+    [ ] create a method getSingleValue in the IJSONObject that just returns the stored value
+
+
 
 

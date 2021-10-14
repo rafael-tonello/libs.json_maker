@@ -24,36 +24,43 @@ namespace JsonMaker{
     {
 		protected:
 			//properties
-			SOType forcedType = SOType::Undefined;
 
 
 			//methods
 			SOType __determineSoType(string value);
-			/*v*/virtual string serializeSingleValue() = 0;
+			string serializeSingleValue();
 
         public:
             virtual ~IJSONObject(){};
 			//public properties
-			IJSONObject *parent;
-			string name;
+            //used by parser only
+			    IJSONObject *parent;
+			    string name;
+            
+
+			bool isArray();
+			void forceType(SOType forcedType);
+            SOType getJSONType();
+			string ToJson(bool quotesOnNames, bool format = false, int level = 0);
 
 			//public methods
             /*v*/virtual void clear() = 0;
 			virtual void Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject) =  0;
             /*v*/virtual void del(string name) = 0;
-			/*v*/virtual SOType getJSONType() = 0;
 			/*v*/virtual string getRelativeName() = 0;
-			virtual bool isArray();
             /*v*/virtual void setChild(string name, IJSONObject *child) = 0;
-            /*v*/virtual void setSingleValue(string value, SOType forceType = SOType::Undefined) = 0;
-
-			virtual void forceType(SOType forcedType);
-			virtual string ToJson(bool quotesOnNames, bool format = false, int level = 0);
-
+            /*v*/virtual void setSingleValue(string value) = 0;
+            /*v*/virtual string getSingleValue() = 0;
+            virtual IJSONObject* createNewInstance() = 0;
 			virtual bool __containsChild(string name, bool caseSensitive = false) = 0;
             virtual IJSONObject* __getChild(string name, bool caseSensitive = false) = 0;
 			virtual vector<string> __getChildsNames() = 0;
 			/*v*/virtual bool isDeletable() = 0;
+            virtual void __storeInternalProp(string name,string value) = 0;
+            virtual string __getInternalProp(string name, string defaultValue) = 0;
+
+            virtual void addComment(string comment) = 0;
+            virtual vector<string> getComments() = 0;
 
 
     };
@@ -62,24 +69,33 @@ namespace JsonMaker{
     {
         protected:
 
+            vector<string> comments;
+
             map<string, IJSONObject*> childs;
-            SOType type = SOType::Null;
 			string singleValue;
 			string relativeName;
+            map<string, string> tags;
+
 
         public:
-			void Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject);
-            void setChild(string name, IJSONObject *child);
-			void del(string name);
 			void clear();
-			string serializeSingleValue();
-			SOType getJSONType();
-            void setSingleValue(string value, SOType forceType = SOType::Undefined);
-			vector<string> __getChildsNames();
-			IJSONObject* __getChild(string name, bool caseSensitive = false);
-			bool __containsChild(string name, bool caseSensitive = false);
+			void Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject);
+			void del(string name);
 			string getRelativeName();
+            void setChild(string name, IJSONObject *child);
+            void setSingleValue(string value);
+            string getSingleValue();
+            IJSONObject* createNewInstance();
+			bool __containsChild(string name, bool caseSensitive = false);
+			IJSONObject* __getChild(string name, bool caseSensitive = false);
+			vector<string> __getChildsNames();
 			bool isDeletable();
+
+            void __storeInternalProp(string name,string value);
+            string __getInternalProp(string name, string defaultValue);
+
+            void addComment(string comment);
+            vector<string> getComments();
 
             //InMemoryJsonObject(InMemoryJsonObject *pParent, string relativeName);
 			//IJSONObject* get(string name);
@@ -92,6 +108,8 @@ namespace JsonMaker{
     {
 
         private:
+
+            int commentNextNameCount = 0;
 			JsonType jsonType = JsonType::Memory;
             IJSONObject *root;
             IJSONObject *modelObject;
@@ -115,6 +133,8 @@ namespace JsonMaker{
             string clearJsonString(string json);
 
             bool isAJson(string json, bool objects = true, bool arrays = true);
+
+            string getNextCommentChildName();
 
         public:
             
