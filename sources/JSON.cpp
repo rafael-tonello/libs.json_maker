@@ -387,7 +387,7 @@ namespace JsonMaker{
 
 	void InMemoryJsonObject::del(string name)
     {
-        this->childs[name].clear();
+        this->childs[name]->clear();
         this->childs.erase(name);
     }
 
@@ -480,18 +480,12 @@ namespace JsonMaker{
 			}
 
 			return false;
-
 		}
 	}
 
 	string InMemoryJsonObject::getRelativeName()
 	{
 		return this->relativeName;
-	}
-
-	bool InMemoryJsonObject::isDeletable()
-	{
-		return false;
 	}
 
     void InMemoryJsonObject::__storeInternalProp(string name,string value)
@@ -553,7 +547,7 @@ namespace JsonMaker{
 
         root = this->modelObject->createNewInstance();
 
-		root->Initialize("", this->modelObject);
+		root->Initialize("");
 	}
 
 
@@ -604,7 +598,7 @@ namespace JsonMaker{
 
                 tempObj = currentParent->createNewInstance();
 
-				tempObj->Initialize(currentParent->getRelativeName(), this->modelObject);
+				tempObj->Initialize(currentParent->getRelativeName());
                 tempObj->parser_parent = currentParent;
 
 				if (forceType != SOType::Undefined)

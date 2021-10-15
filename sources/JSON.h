@@ -162,21 +162,13 @@ namespace JsonMaker{
 
 
             IJSONObject *find(string objectName, bool autoCreateTree, IJSONObject *currentParent, SOType forceType = SOType::Undefined);
-
             void _set(string objectName, string value);
-
             void del(IJSONObject *node);
-
             vector<string> getObjectsNames(IJSONObject *currentItem = NULL);
-
             vector<string> getChildsNames(IJSONObject *currentItem = NULL);
-
             vector<string> getJsonFields(string json);
-
             string clearJsonString(string json);
-
             bool isAJson(string json, bool objects = true, bool arrays = true);
-
             string getNextCommentChildName();
 
         public:
@@ -192,10 +184,8 @@ namespace JsonMaker{
                 else
                     this->internalInitialize();
                 
-                
                 this->parseJson(((JSON&)cp2).ToJson());
             }
-
 
             /// <summary>
             /// Removes an object +from JSON three
