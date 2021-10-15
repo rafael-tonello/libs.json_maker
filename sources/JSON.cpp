@@ -297,6 +297,7 @@ namespace JsonMaker{
         }
 
     };
+    
     SOType IJSONObject::getJSONType()
     {
         auto childNames = this->__getChildsNames();
@@ -327,9 +328,9 @@ namespace JsonMaker{
             return SOType::__Object;
         else if (typeName == "__Array")
             return SOType::__Array;
-        else if (typeName == "Undefined")
+        //else if (typeName == "Undefined")
             //return SOType::Undefined;
-            return this->__determineSoType(this->getSingleValue());
+        return this->__determineSoType(this->getSingleValue());
     }
 
 
@@ -374,10 +375,9 @@ namespace JsonMaker{
 
 namespace JsonMaker{
 	//InMemoryJsonObject
-	void InMemoryJsonObject::Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject)
+	void InMemoryJsonObject::Initialize(string relativeName)
 	{
 		this->relativeName = relativeName;
-        this->parent = pParent;
     }
 
 	void InMemoryJsonObject::setChild(string name, IJSONObject *child)
@@ -387,6 +387,7 @@ namespace JsonMaker{
 
 	void InMemoryJsonObject::del(string name)
     {
+        this->childs[name].clear();
         this->childs.erase(name);
     }
 
@@ -552,7 +553,7 @@ namespace JsonMaker{
 
         root = this->modelObject->createNewInstance();
 
-		root->Initialize(NULL, "", this->modelObject);
+		root->Initialize("", this->modelObject);
 	}
 
 
@@ -601,11 +602,10 @@ namespace JsonMaker{
 				IJSONObject *tempObj = NULL;
 				string currentParentRelativeName = currentParent->getRelativeName();
 
-				//if (dynamic_cast<InMemoryJsonObject*>(currentParent))
-				//	tempObj = new InMemoryJsonObject();
                 tempObj = currentParent->createNewInstance();
 
-				tempObj->Initialize(currentParent, currentParent->getRelativeName(), this->modelObject);
+				tempObj->Initialize(currentParent->getRelativeName(), this->modelObject);
+                tempObj->parser_parent = currentParent;
 
 				if (forceType != SOType::Undefined)
 					tempObj->forceType(forceType);
@@ -946,7 +946,7 @@ namespace JsonMaker{
 		if (parentName != "")
 			currentObject = this->find(parentName, true, root);
 
-		currentObject->name = parentName;
+		currentObject->parser_name = parentName;
 
 		ParseStates state = ParseStates::findValueStart;
 
@@ -1003,7 +1003,7 @@ namespace JsonMaker{
 						{
 							parentName = parentName.substr(0, parentName.find_last_of('.'));
 							if (currentObject != NULL)
-								currentObject = currentObject->parent;
+								currentObject = currentObject->parser_parent;
 						}
 						else
 						{
@@ -1023,7 +1023,7 @@ namespace JsonMaker{
 					{
 						state = ParseStates::waitingKeyValueSep;
 						currentObject = this->find(currentChildName.str(), true, currentObject, forceType);
-						currentObject->name = currentChildName.str();
+						currentObject->parser_name = currentChildName.str();
 						parentName = parentName + (parentName != "" ? "." : "") + currentChildName.str();
 						currentChildName.str("");
 
@@ -1070,7 +1070,7 @@ namespace JsonMaker{
 						if (parentName.find('.') != string::npos)
 						{
 							parentName = parentName.substr(0, parentName.find_last_of('.'));
-							currentObject = currentObject->parent;
+							currentObject = currentObject->parser_parent;
 						}
 						else
 						{
@@ -1078,7 +1078,7 @@ namespace JsonMaker{
 							currentObject = root;
 						}
 
-						currentObject->del(temp->name);
+						currentObject->del(temp->parser_name);
 
 						cont--;
 						currCol--;
@@ -1097,7 +1097,7 @@ namespace JsonMaker{
 					currentChildName.str("");
 					currentChildName << to_string(currentObject->__getChildsNames().size());
 					currentObject = this->find(currentChildName.str(), true, currentObject, forceType);
-					currentObject->name = currentChildName.str();
+					currentObject->parser_name = currentChildName.str();
 					parentName = parentName + (parentName != "" ? "." : "") + currentChildName.str();
 					state = ParseStates::findValueStart;
 					cont--;
@@ -1129,7 +1129,7 @@ namespace JsonMaker{
 						if (parentName.find('.') != string::npos)
 						{
 							parentName = parentName.substr(0, parentName.find_last_of('.'));
-							currentObject = currentObject->parent;
+							currentObject = currentObject->parser_parent;
 						}
 						else
 						{
@@ -1158,7 +1158,7 @@ namespace JsonMaker{
 						if (parentName.find('.') != string::npos)
 						{
 							parentName = parentName.substr(0, parentName.find_last_of('.'));
-							currentObject = currentObject->parent;
+							currentObject = currentObject->parser_parent;
 						}
 						else
 						{
@@ -1193,7 +1193,7 @@ namespace JsonMaker{
 							if (parentName.find('.') != string::npos)
 							{
 								parentName = parentName.substr(0, parentName.find_last_of('.'));
-								currentObject = currentObject->parent;
+								currentObject = currentObject->parser_parent;
 							}
 							else
 							{

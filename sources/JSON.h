@@ -30,12 +30,23 @@ namespace JsonMaker{
 			SOType __determineSoType(string value);
 			string serializeSingleValue();
 
+            
+
         public:
             virtual ~IJSONObject(){};
+
+
 			//public properties
             //used by parser only
-			    IJSONObject *parent;
-			    string name;
+
+            IJSONObject *parser_parent;
+            string parser_name;
+			    
+            
+            /*void setParser_Parent(IJSONObject* nParent){};
+            void setParser_Name(string name);
+            IJSONObject* getParser_Parent();
+            string getParser_Name();*/
             
 
 			bool isArray();
@@ -44,22 +55,55 @@ namespace JsonMaker{
 			string ToJson(bool quotesOnNames, bool format = false, int level = 0);
 
 			//public methods
-            /*v*/virtual void clear() = 0;
-			virtual void Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject) =  0;
-            /*v*/virtual void del(string name) = 0;
-			/*v*/virtual string getRelativeName() = 0;
-            /*v*/virtual void setChild(string name, IJSONObject *child) = 0;
-            /*v*/virtual void setSingleValue(string value) = 0;
-            /*v*/virtual string getSingleValue() = 0;
+
+            //This method must be used to clear used data. But atention: this method is called only in the root node.
+            //So, if the child nodes needs to be cleared too, you need call their 'clear' methods be your own.
+            //Clear method is called in preparation to a deletation of the entire json data, differently from method
+            //'del' which is called in preparation to clear only a single node.
+            virtual void clear() = 0;
+
+            //this methos is called right after the object creation
+			virtual void Initialize(string relativeName) =  0;
+
+            //this method is called when a single child node must be deleted. This method can call the clear function of 
+            //the child node before delete them
+            virtual void del(string name) = 0;
+
+            //should return the name passed in the Initialize function
+			virtual string getRelativeName() = 0;
+
+            //adds a new child to the current node
+            virtual void setChild(string name, IJSONObject *child) = 0;
+
+            //set a single value of the node (this value can be a bool, integer, string ...)
+            virtual void setSingleValue(string value) = 0;
+
+            //return the single value of the node (the value setted with setSingleValue method)
+            virtual string getSingleValue() = 0;
+
+            //This function is very important to the JSON library when it needs to create new nodes.
+            //Should returna  new instance of the class. 
             virtual IJSONObject* createNewInstance() = 0;
+
+            //just return true or fals to indicade if the node contains a certain child
 			virtual bool __containsChild(string name, bool caseSensitive = false) = 0;
+
+            //returns a child
             virtual IJSONObject* __getChild(string name, bool caseSensitive = false) = 0;
+
+            //return a list with the names of all childs of the node
 			virtual vector<string> __getChildsNames() = 0;
-			/*v*/virtual bool isDeletable() = 0;
+
+            //should store some data that is needed by the JSON library
             virtual void __storeInternalProp(string name,string value) = 0;
+
+            //return properties saved with __storeInternalProp
             virtual string __getInternalProp(string name, string defaultValue) = 0;
 
+            //save comments readed in the JSON file (comments are a feature of the JSON maker, and is not supported by the JSON specs)
             virtual void addComment(string comment) = 0;
+
+            //return the list of comments added with 'addComment' function
             virtual vector<string> getComments() = 0;
 
 
@@ -79,7 +123,7 @@ namespace JsonMaker{
 
         public:
 			void clear();
-			void Initialize(IJSONObject *pParent, string relativeName, IJSONObject *modelObject);
+			void Initialize(string relativeName);
 			void del(string name);
 			string getRelativeName();
             void setChild(string name, IJSONObject *child);
@@ -89,7 +133,6 @@ namespace JsonMaker{
 			bool __containsChild(string name, bool caseSensitive = false);
 			IJSONObject* __getChild(string name, bool caseSensitive = false);
 			vector<string> __getChildsNames();
-			bool isDeletable();
 
             void __storeInternalProp(string name,string value);
             string __getInternalProp(string name, string defaultValue);
