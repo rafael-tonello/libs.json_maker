@@ -93,13 +93,13 @@ namespace JsonMaker{
         {
             if (data[cont] == '\\')
             {
-                if (data[cont + 1] == '\"')
+                if (data[cont + 1] == '"')
                     nValue += '\"';
-                else if (data[cont + 1] == '\r')
+                else if (data[cont + 1] == 'r')
                     nValue += '\r';
-                else if (data[cont + 1] == '\n')
+                else if (data[cont + 1] == 'n')
                     nValue += '\n';
-                else if (data[cont + 1] == '\t')
+                else if (data[cont + 1] == 't')
                     nValue += '\t';
                 else if (data[cont + 1] == '\\')
                     nValue += '\\';
