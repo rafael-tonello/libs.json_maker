@@ -3,10 +3,10 @@
         {
             "type": "shell",
             "label": "C/C++: g++ build active file",
-            "command": "${workspaceFolder}/build.sh",
+            "command": "${workspaceFolder}/tests/build.sh",
             "args": [],
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/tests"
             },
             "problemMatcher": [
                 "$gcc"

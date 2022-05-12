@@ -1,7 +1,7 @@
 //compile with g++ -std=c++14 -o saida tester.cpp
 #include <iostream>
 #include <string>
-#include "JSON.h"
+#include <JSON.h>
 
 using namespace std;
 using namespace JsonMaker;

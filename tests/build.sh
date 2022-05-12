@@ -3,16 +3,17 @@ binary_name="bin/json_tests"
 
 #the input files
 sources=""
-sources="$sources sources/JSON.cpp"
-sources="$sources sources/tester.cpp"
+sources="$sources ../sources/JSON.cpp"
+sources="$sources tester.cpp"
 
 #library paths
 #Example of use: libraries="$libraries Lsources/myLibFolder"
 libraries=""
+libraries="$libraries -I../sources"
 
 #commands to be runned before compiling process
 mkdir bin
-cp -r sources/copyToBinaryDir/* bin/
+cp -r copyToBinaryDir/* bin/
 
 #the c++ command line
 cpp_cmd="g++ -std=c++17 -ggdb"
