@@ -89,6 +89,9 @@ namespace JsonMaker{
         //result = result.Replace("\\\\", "\\").Replace("\\\"", "\"").Replace("\\r", "\r").Replace("\\n", "\n").Replace("\\t", "\t");
         string nValue = "";
         unsigned int cont;
+        if (data.size() == 0)
+            return "";
+
         for (cont = 0; cont < data.size() - 1; cont++)
         {
             if (data[cont] == '\\')

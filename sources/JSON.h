@@ -30,6 +30,7 @@ namespace JsonMaker{
 			SOType __determineSoType(string value);
 			string serializeSingleValue();
 
+            string className = "IJSONObject";
             
 
         public:
@@ -122,6 +123,7 @@ namespace JsonMaker{
 
 
         public:
+            InMemoryJsonObject(){this->className = "InMemoryJsonObject";}
 			void clear();
 			void Initialize(string relativeName);
 			void del(string name);
@@ -173,8 +175,10 @@ namespace JsonMaker{
 
         public:
             
-			JSON(bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
-			JSON(string JsonString, bool caseSensitiveToFind = true, IJSONObject *_modelObject = NULL);
+			JSON(bool caseSensitiveToFind, IJSONObject *_modelObject = NULL);
+			JSON(string JsonString, bool caseSensitiveToFind, IJSONObject *_modelObject = NULL);
+            JSON(string jsonString):JSON(jsonString, true, NULL){};
+            JSON():JSON(true, NULL){};
 			~JSON();
 
             JSON(const JSON &cp2)
@@ -184,7 +188,19 @@ namespace JsonMaker{
                 else
                     this->internalInitialize();
                 
-                this->parseJson(((JSON&)cp2).ToJson());
+                string data = ((JSON&)cp2).ToJson();
+                this->parseJson(data);
+            }
+
+            JSON& operator =(const JSON& other)
+            {
+                if (dynamic_cast<InMemoryJsonObject*>(other.modelObject))
+			        this->internalInitialize(new InMemoryJsonObject());
+                else
+                    this->internalInitialize();
+
+                string data = ((JSON&)other).ToJson();
+                this->parseJson(data);
             }
 
             /// <summary>
@@ -217,6 +233,14 @@ namespace JsonMaker{
             string ToJson(bool format = false);
 
             string ToString();
+
+            operator string(){ return ToString();}
+            string operatorCharTmp;
+            operator char*(){
+                operatorCharTmp = ToString();
+                return (char*)operatorCharTmp.c_str();
+            }
+            
 
             /// <summary>
             /// Return true if the an object is in json three
