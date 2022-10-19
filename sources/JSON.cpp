@@ -352,7 +352,7 @@ namespace JsonMaker{
             else
             {
                 //try as int
-                if (getOnly(value, "0123456789") == value)
+                if (getOnly(value, "-0123456789") == value)
                     return SOType::Int;
                 else
                 {
@@ -361,7 +361,7 @@ namespace JsonMaker{
 						return SOType::DateTime;
                     //try as double
                     else{
-						if (getOnly(value, "0123456789.") == value)
+						if (getOnly(value, "-0123456789.") == value)
 							return SOType::Double;
 						else
 						{
