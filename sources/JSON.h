@@ -362,7 +362,7 @@ namespace JsonMaker{
             /// </summary>
             /// <param name="objectName">The name of the object</param>
             /// <returns></returns>
-            int getArrayLength(string objectName = "");
+            size_t getArrayLength(string objectName = "");
 
             void clear();
             void Dispose();

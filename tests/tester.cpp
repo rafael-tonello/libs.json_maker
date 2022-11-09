@@ -25,6 +25,8 @@ void test1()
     js->setString("mas.em.1", "suahsuahsuhas");
 
     cout << js->ToJson(true);
+    cout << endl;
+    cout << js->ToJson(false);
 
 
     cout << endl << flush;

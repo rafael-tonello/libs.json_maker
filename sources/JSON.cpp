@@ -1568,7 +1568,7 @@ namespace JsonMaker{
     /// </summary>
     /// <param name="objectName">The name of the object</param>
     /// <returns></returns>
-    int JSON::getArrayLength(string objectName)
+    size_t JSON::getArrayLength(string objectName)
     {
         IJSONObject* finded = this->find(objectName, false, this->root);
 

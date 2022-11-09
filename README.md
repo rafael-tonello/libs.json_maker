@@ -13,7 +13,6 @@ To access JSON object properties, you must use object notation names (such as "r
 
 
 # Tasks lists
-
     
 
 
