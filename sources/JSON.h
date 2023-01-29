@@ -201,6 +201,8 @@ namespace JsonMaker{
 
                 string data = ((JSON&)other).ToJson();
                 this->parseJson(data);
+
+                return *this;
             }
 
             /// <summary>
