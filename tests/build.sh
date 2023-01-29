@@ -16,7 +16,8 @@ mkdir bin
 cp -r copyToBinaryDir/* bin/
 
 #the c++ command line
-cpp_cmd="g++ -std=c++17 -ggdb"
+#cpp_cmd="g++ -std=c++17 -ggdb"
+cpp_cmd="clang++ -std=c++17 -ggdb"
 
 clear
 clear

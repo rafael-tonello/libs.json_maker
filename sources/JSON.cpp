@@ -727,7 +727,7 @@ namespace JsonMaker{
 
 		if (objectName != "")
 		{
-			if (!objectName.find("\"") == 0)
+            if (objectName.find("\"") != 0)
 				objectName = '"' + objectName + '"';
 			objectName = "{" + objectName + ":" + toImport->ToJson() + "}";
 			this->parseJson(objectName, "");
@@ -988,7 +988,7 @@ namespace JsonMaker{
 							state = ParseStates::readingName;
 						currentChildName.str("");
 					}
-					else if ((curr == ',')/* || (curr == '[') || (curr == '{')*/)
+					else if (curr == ','/* || (curr == '[') || (curr == '{')*/)
 					{
 						if (currentObject->isArray())
 							state = ParseStates::prepareArray;
