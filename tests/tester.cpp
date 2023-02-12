@@ -9,11 +9,13 @@ using namespace JsonMaker;
 string readFile(string fName);
 void test1();
 void test2();
+void test3();
 
 int main()
 {
     test1();
     test2();
+    test3();
     return 0;
 }
 
@@ -43,6 +45,19 @@ void test2()
 
 }
 
+void test3()
+{
+    //set datetime in a string
+    JSON js;
+    string dateTime = "0102-03-04 05:06:07";
+    js.setString("datetime", dateTime, true);
+
+    if(dateTime == js.getString("datetime"))
+        cout << "datetime setted with setString(force type detection) is working well" << endl;
+    else
+        cout << "datetime setted with setString(force type detection) is not working" << endl;
+}
+
 string readFile(string fName)
 {
     FILE* f;
@@ -57,3 +72,4 @@ string readFile(string fName)
     delete[] buffer;
     return ret;
 }
+

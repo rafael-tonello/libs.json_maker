@@ -1371,15 +1371,21 @@ namespace JsonMaker{
 
         string objectkeys = "{}";
         string vectorkeys = "[]";
+
+        bool propNameFound = false;
+
         for (const auto& att : json)
         {
             cont++;
             if ((att == '\"') && (oldAtt != '\\'))
+            {
                 quotes = !quotes;
+                propNameFound = true;
+            }
 
             if (!quotes)
             {
-                if (att == ':')
+                if (propNameFound && (att == ':'))
                     return true;
                 if ((objects) && (objectkeys.find(att) != string::npos) && (cont == 0))
                     return true;
